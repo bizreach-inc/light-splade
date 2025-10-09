@@ -1,0 +1,101 @@
+[project]
+name = "light-splade"
+version = "0.1.0"
+description = "A Python library for efficient sparse retrieval using SPLADE models."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "accelerate==1.10.1",
+    "beir==2.2.0",
+    "datasets==3.6.0",
+    "fugashi==1.5.1",
+    "hydra-core==1.3.2",
+    "numpy==2.2.0",
+    "omegaconf==2.3.0",
+    "pandas==2.3.2",
+    "pydantic==2.11.7",
+    "scikit-learn==1.7.1",
+    "scipy==1.16.1",
+    "sentence-transformers==5.1.0",
+    "tensorboard>=2.20.0",
+    "torch==2.6.0",
+    "transformers==4.56.1",
+    "typer==0.17.3",
+    "unidic-lite==1.0.8",
+]
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools >= 64", "setuptools-scm>=8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["light_splade.*"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.1",
+    "pre-commit>=4.3.0",
+    "pytest==8.4.2",
+    "ruff>=0.12.12",
+    "types-pyyaml>=6.0.12.20250822",
+]
+
+[tool.mypy]
+python_version=3.11
+platform = "linux"
+show_column_numbers = true
+follow_imports = "normal"
+ignore_missing_imports = true
+disallow_untyped_calls = false
+warn_return_any = true
+strict_optional = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+follow_untyped_imports = true
+cache_dir = "/dev/null"
+
+# Relax some rules
+disable_error_code = ["method-assign"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+  # The E, F, W categories are flake8 rules.
+  "E",
+  "F",
+  "W",
+  # Enable isort support
+  "I",
+  # Enable partial pylint support
+  "PL",
+]
+
+extend-ignore = [
+  "PLC0415", # Allow lazy imports inside functions
+  # Disable all the "too-*" checks, as they are too strict for our codebase
+  "PLR0904", # too-many-public-methods
+  "PLR0911", # too-many-return-statements
+  "PLR0912", # too-many-branches
+  "PLR0913", # too-many-arguments
+  "PLR0914", # too-many-locals
+  "PLR0915", # too-many-statements
+  "PLR0917", # too-many-positional-arguments
+  "PLR1702", # too-many-nested-blocks
+  "PLR2004", # Magic value used in comparison this happens a lot within unittests
+  "PLW0108", # unnecessary-lambda
+  "PLW2901", # allow re-assigning a loop variable
+  "E501"
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+default-section = "third-party"
+force-single-line = true
+order-by-type = true

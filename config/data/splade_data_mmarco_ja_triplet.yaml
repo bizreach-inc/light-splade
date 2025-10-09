@@ -1,0 +1,15 @@
+# Data configuration for SPLADE v2 training (without hard negative scores)
+# set DATA_PATH as the root of the data directory, then use interpolation to access it
+DATA_PATH: data/mmarco_ja_4_splade_triplet
+
+train_doc_master: ${.DATA_PATH}/train/doc_master.ndjson
+train_query_master: ${.DATA_PATH}/train/query_master.ndjson
+train_positives: ${.DATA_PATH}/train/positive_lists.ndjson
+train_triplets: ${.DATA_PATH}/train/triplets.ndjson
+eval_loss_size: 10000
+
+validation_doc_master: ${.DATA_PATH}/validation/doc_master.ndjson
+validation_query_master: ${.DATA_PATH}/validation/query_master.ndjson
+validation_positives: ${.DATA_PATH}/validation/positive_lists.ndjson
+
+# Note: SPLADE v2 doesn't require hard negative scores from teacher model

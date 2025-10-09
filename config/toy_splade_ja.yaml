@@ -1,0 +1,4 @@
+defaults:
+  - model: splade_model_bert_ja_shared_weight
+  - data: toy_triplet_data
+  - training: toy_triplet

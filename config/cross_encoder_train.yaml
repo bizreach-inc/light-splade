@@ -1,0 +1,14 @@
+input_file: data/mmarco_ja_4_splade_distil/cross-encoder-training-pairs.pkl.gz
+model_path: cl-tohoku/bert-base-japanese-v3
+output_path: model/bert-base-japanese-v3_cross-encoder
+final_output_path: model/bert-base-japanese-v3_cross-encoder/final
+max_train_size: 10000000 # 0 for no limit
+max_eval_size: 1000
+max_token_len: 256
+char_per_token_ratio: 1.8
+num_epochs: 1
+train_batch_size: 128
+eval_batch_size: 64
+evaluation_steps: 16000
+warmup_steps: 5000
+seed: 42
