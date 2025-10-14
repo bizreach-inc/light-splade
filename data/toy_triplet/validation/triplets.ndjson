@@ -1,0 +1,12 @@
+{"qid": 1, "pos_doc_id": 1, "neg_doc_id": 2}
+{"qid": 1, "pos_doc_id": 1, "neg_doc_id": 3}
+{"qid": 1, "pos_doc_id": 1, "neg_doc_id": 4}
+{"qid": 1, "pos_doc_id": 1, "neg_doc_id": 5}
+{"qid": 2, "pos_doc_id": 6, "neg_doc_id": 7}
+{"qid": 2, "pos_doc_id": 6, "neg_doc_id": 8}
+{"qid": 2, "pos_doc_id": 6, "neg_doc_id": 9}
+{"qid": 2, "pos_doc_id": 6, "neg_doc_id": 10}
+{"qid": 11, "pos_doc_id": 51, "neg_doc_id": 52}
+{"qid": 11, "pos_doc_id": 51, "neg_doc_id": 53}
+{"qid": 11, "pos_doc_id": 51, "neg_doc_id": 54}
+{"qid": 11, "pos_doc_id": 51, "neg_doc_id": 55}
