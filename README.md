@@ -46,14 +46,25 @@ uv run pytest
   - `uv run examples/run_train_splade_triplet.py --config-name toy_splade_ja`
   - To run on an environment without GPU, see this [trouble shooting](docs/trouble_shooting.md#running-the-training-script-on-cpu-only-machines)
 
-- **Convert text to sparse vector using SPLADE model**
+  For full run instructions using `uv` and `Docker` commands, see [Getting started](docs/getting_started.md).
+
+- **Convert text to sparse vector with SPLADE model using this package**
+
   ```python
   import torch
   from light_splade.models.splade import SpladeEncoder
 
-  encoder = SpladeEncoder(model_path="path/to/model")
+  # Initialize the encoder
+  encoder = SpladeEncoder(model_path="bizreach-inc/light-splade-japanese-28M")
 
-  token_outputs = encoder.tokenizer("日本の首都は東京です。", return_tensors="pt")
+  # Tokenize input text
+  corpus = [
+      "日本の首都は東京です。",
+      "大阪万博は2025年に開催されます。"
+  ]
+  token_outputs = encoder.tokenizer(corpus, padding=True, return_tensors="pt")
+
+  # Generate sparse representation
   with torch.inference_mode():
       sparse_vecs = encoder.get_sparse(
           input_ids=token_outputs["input_ids"],
@@ -61,16 +72,62 @@ uv run pytest
       )
 
   print(sparse_vecs[0])
+  print(sparse_vecs[1])
   ```
 
-  Output:
-  ```
-  > {'東京': 2.07, '首都': 1.89, '日本': 1.81, '都': 1.51, '江戸': 1.51, '都市': 1.42, '駐日': 1.37, 'ニッポン': 1.2, '北京': 0.93, '所在': 0.91, '大阪': 0.78, 'ロンドン': 0.68, '天皇': 0.6, 'ソウル': 0.54, '京都': 0.53, '明治': 0.52, '札幌': 0.5, '省': 0.48, 'ジャ': 0.45, 'シティ': 0.42, 'ステート': 0.42, '市': 0.41, '国': 0.39,...}
+- **Convert text to sparse vector with SPLADE model using `transformers` package**
 
-  (43 tokens)
+  ```python
+  import torch
+  from transformers import AutoTokenizer, AutoModelForMaskedLM
+
+
+  def dense_to_sparse(dense: torch.tensor, idx2token: dict[int, str]) -> list[dict[str, float]]:
+      rows, cols = dense.nonzero(as_tuple=True)
+      rows = rows.tolist()
+      cols = cols.tolist()
+      weights = dense[rows, cols].tolist()
+
+      sparse_vecs = [{} for _ in range(dense.size(0))]
+      for row, col, weight in zip(rows, cols, weights):
+          sparse_vecs[row][idx2token[col]] = round(weight, 2)
+
+      for i in range(len(sparse_vecs)):
+          sparse_vecs[i] = dict(sorted(sparse_vecs[i].items(), key=lambda x: x[1], reverse=True))
+      return sparse_vecs
+
+
+  MODEL_PATH = "bizreach-inc/light-splade-japanese-28M"
+  device = "cuda" if torch.cuda.is_available() else "cpu"
+  transformer = AutoModelForMaskedLM.from_pretrained(MODEL_PATH).to(device)
+  tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+  idx2token = {idx: token for token, idx in tokenizer.get_vocab().items()}
+
+  corpus = [
+      "日本の首都は東京です。",
+      "大阪万博は2025年に開催されます。"
+  ]
+  token_outputs = tokenizer(corpus, padding=True, return_tensors="pt")
+  attention_mask = token_outputs["attention_mask"].to(device)
+  token_outputs = {key: value.to(device) for key, value in token_outputs.items()}
+
+  with torch.inference_mode():
+      outputs = transformer(**token_outputs)
+      dense, _ = torch.max(
+          torch.log(1 + torch.relu(outputs.logits)) * attention_mask.unsqueeze(-1),
+          dim=1,
+      )
+  sparse_vecs = dense_to_sparse(dense, idx2token)
+
+  print(sparse_vecs[0])
+  print(sparse_vecs[1])
   ```
 
-For full run instructions using `uv` and `Docker` commands, see [Getting started](docs/getting_started.md).
+- Output:
+  ```
+  {'首都': 1.83, '日本': 1.82, '東京': 1.78, '中立': 0.73, '都会': 0.69, '駒': 0.68, '州都': 0.67, '首相': 0.64, '足立': 0.62, 'です': 0.61, '都市': 0.54, 'ユニ': 0.54, '京都': 0.52, '国': 0.51, '発表': 0.49, '成田': 0.48, '太陽': 0.45, '藤原': 0.45, '私立': 0.42, '王国': 0.4...}
+  {'202': 1.61, '開催': 1.49, '大阪': 1.34, '万博': 1.19, '東京': 1.15, '年': 1.1, 'いつ': 1.05, '##5': 1.03, '203': 0.86, '月': 0.8, '期間': 0.79, '高槻': 0.79, '京都': 0.7, '神戸': 0.62, '2024': 0.54, '夢': 0.52, '206': 0.52, '姫路': 0.51, '行わ': 0.49, 'こう': 0.49, '芸術': 0.48...}
+  ```
 
 ## Input Data format
 
