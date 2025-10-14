@@ -3,10 +3,10 @@ on:
   pull_request:
     types: [ opened, reopened, synchronize, ready_for_review ]
     paths:
-      - ./**
+      - src/**
   push:
     paths:
-      - ./**
+      - src/**
 
 defaults:
   run:
