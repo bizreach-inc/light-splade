@@ -2,11 +2,7 @@ name: light-splade-unit-test
 on:
   pull_request:
     types: [ opened, reopened, synchronize, ready_for_review ]
-    paths:
-      - ./**
   push:
-    paths:
-      - ./**
 
 defaults:
   run:
