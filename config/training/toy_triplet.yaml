@@ -1,0 +1,41 @@
+training_loss: in_batch_negatives
+regularizers:
+  doc:
+    reg_type: FLOPS
+    lambda_: 0.008
+    T: 5
+  query:
+    reg_type: FLOPS
+    lambda_: 0.01
+    T: 5
+
+validation_metrics: [ MRR@10, NDCG@10, recall@10, recall@100, recall@200, recall@500, recall@1000 ]
+
+# paths
+final_output_dir: model/splade_toy_triplet
+output_dir: model/splade_toy_triplet/ckpts
+logging_dir: tensorboard/splade_toy_triplet
+
+logging_steps: 5
+save_steps: 10
+save_total_limit: 10
+do_eval: true
+eval_strategy: steps
+eval_steps: 10
+max_steps: 40
+report_to:
+  - tensorboard
+
+# scheduler
+warmup_steps: 10
+
+# optimizer
+learning_rate: 2e-5
+weight_decay: 0.01
+
+# others
+seed: 123
+per_device_train_batch_size: 2
+per_device_eval_batch_size: 2
+fp16: true
+save_safetensors: true

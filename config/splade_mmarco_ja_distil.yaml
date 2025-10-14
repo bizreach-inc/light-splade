@@ -1,0 +1,5 @@
+
+defaults:
+  - model: splade_model_bert_ja_shared_weight
+  - data: splade_data_mmarco_ja_distill
+  - training: splade_training_distill

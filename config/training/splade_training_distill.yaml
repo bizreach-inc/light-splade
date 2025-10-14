@@ -1,0 +1,48 @@
+
+training_loss: margin_mse
+regularizers:
+  doc:
+    reg_type: FLOPS
+    lambda_: 0.32
+    T: 50000
+  query:
+    reg_type: FLOPS
+    lambda_: 0.4
+    T: 50000
+
+validation_metrics: [ MRR@10, NDCG@10, recall@10, recall@100, recall@200, recall@500, recall@1000 ]
+
+######## From TrainingArguments class ##########
+# - Only values which are different from default values are defined here
+# - Look at TrainingArguments spec for available arguments
+#   - https://huggingface.co/docs/transformers/v4.56.1/en/main_classes/trainer#transformers.TrainingArguments
+################################################
+
+# paths
+final_output_dir: model/bert-base-japanese-v3_splade_mmarco_ja_distil
+output_dir: model/bert-base-japanese-v3_splade_mmarco_ja_distil/ckpts
+logging_dir: tensorboard/bert-base-japanese-v3_splade_mmarco_ja_distil
+
+logging_steps: 500
+save_steps: 5000
+save_total_limit: 10
+do_eval: true
+eval_strategy: steps
+eval_steps: 10000
+max_steps: 150000
+report_to:
+  - tensorboard
+
+# scheduler
+warmup_steps: 4000
+
+# optimizer
+learning_rate: 2e-5
+weight_decay: 0.01
+
+# others
+seed: 123
+per_device_train_batch_size: 24
+per_device_eval_batch_size: 24
+fp16: true
+save_safetensors: true

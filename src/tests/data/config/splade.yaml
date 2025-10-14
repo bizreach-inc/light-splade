@@ -1,0 +1,5 @@
+
+defaults:
+  - model: splade_model
+  - data: splade_data
+  - training: splade_train

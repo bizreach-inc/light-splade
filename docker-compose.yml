@@ -1,0 +1,68 @@
+version: "3.8"
+services:
+  common:
+    network_mode: host
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: light-splade:0.1.0
+    volumes:
+      - ./model:/opt/ml/app/model
+      - ./model:/opt/ml/model
+      - ./data:/opt/ml/app/data
+      - ./logs:/opt/ml/app/logs
+      - ./tensorboard:/opt/ml/app/tensorboard
+      - ./cache:/root/.cache
+
+    stdin_open: true
+    tty: true
+
+  convert-mmarco-ja-distil:
+    extends: common
+    entrypoint: "examples/train_splade_distil_pipeline.sh convert-mmarco-ja-distil"
+
+  train-cross-encoder:
+    extends: common
+    runtime: nvidia
+    environment:
+      - DEVICE=cuda:0
+    entrypoint: "examples/train_splade_distil_pipeline.sh train-cross-encoder"
+
+  predict-cross-encoder:
+    extends: common
+    runtime: nvidia
+    environment:
+      - DEVICE=cuda:0
+    entrypoint: "examples/train_splade_distil_pipeline.sh predict-cross-encoder"
+
+  train-splade-distil:
+    extends: common
+    runtime: nvidia
+    environment:
+      - DEVICE=cuda:0
+    entrypoint: "examples/train_splade_distil_pipeline.sh train-splade-distil"
+
+  all-distil:
+    extends: common
+    runtime: nvidia
+    environment:
+      - DEVICE=cuda:0
+    entrypoint: "examples/train_splade_distil_pipeline.sh all"
+
+  convert-mmarco-ja-triplet:
+    extends: common
+    entrypoint: "examples/train_splade_distil_pipeline.sh convert-mmarco-ja-triplet"
+
+  train-splade-triplet:
+    extends: common
+    runtime: nvidia
+    environment:
+      - DEVICE=cuda:0
+    entrypoint: "examples/train_splade_triplet_pipeline.sh train-splade-triplet"
+
+  all-triplet:
+    extends: common
+    runtime: nvidia
+    environment:
+      - DEVICE=cuda:0
+    entrypoint: "examples/train_splade_triplet_pipeline.sh all"

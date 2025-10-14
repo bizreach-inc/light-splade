@@ -1,0 +1,13 @@
+# set DATA_PATH as the root of the data directory, then use interpolation to access it
+DATA_PATH: data/mmarco_ja_4_splade_distil
+
+train_doc_master: ${.DATA_PATH}/train/doc_master.ndjson
+train_query_master: ${.DATA_PATH}/train/query_master.ndjson
+train_positives: ${.DATA_PATH}/train/positive_lists.ndjson
+eval_loss_size: 5000
+
+validation_doc_master: ${.DATA_PATH}/validation/doc_master.ndjson
+validation_query_master: ${.DATA_PATH}/validation/query_master.ndjson
+validation_positives: ${.DATA_PATH}/validation/positive_lists.ndjson
+
+hard_negative_scores: ${.DATA_PATH}/hard-negatives-cross-encoder-scores.ndjson.gz

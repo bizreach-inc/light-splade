@@ -1,0 +1,6 @@
+
+model_name_or_path: dummy_model
+freeze_d_model: False
+agg: max
+# fp16: True
+max_length: 512
