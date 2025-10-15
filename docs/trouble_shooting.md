@@ -18,4 +18,4 @@ uv add torch==2.8.0
 
 After updating, the training script should run on CPU-only environments without the fp16/GPU error.
 
-NOTE: Running the training script on CPU-only machines is intended for demonstration purposes only. For full training runs, it is recommended to use a GPU-enabled machine.
+**NOTE**: Running the training script on CPU-only machines is intended for demonstration purposes only. For full training runs, it is recommended to use a GPU-enabled machine.

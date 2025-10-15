@@ -28,7 +28,7 @@ All data files must be in NDJSON format, where:
 
 **Purpose**: Stores all query texts with their unique identifiers.
 
-**Schema**:
+**Schema**
 ```json
 {
   "qid": <integer>,
@@ -36,11 +36,13 @@ All data files must be in NDJSON format, where:
 }
 ```
 
-**Fields**:
+**Fields**
+
 - `qid` (int): Unique query identifier
 - `text` (str): The query text
 
-**Example**:
+**Example**
+
 ```json
 {"qid": 3, "text": "Gitでコミットを取り消すにはどうすればよい？"}
 {"qid": 4, "text": "睡眠の質を改善するための習慣を教えて。"}
@@ -53,7 +55,8 @@ All data files must be in NDJSON format, where:
 
 **Purpose**: Stores all document texts with their unique identifiers.
 
-**Schema**:
+**Schema**
+
 ```json
 {
   "doc_id": <integer>,
@@ -61,11 +64,13 @@ All data files must be in NDJSON format, where:
 }
 ```
 
-**Fields**:
+**Fields**
+
 - `doc_id` (int): Unique document identifier
 - `text` (str): The document text
 
-**Example**:
+**Example**
+
 ```json
 {"doc_id": 11, "text": "直前のコミットを取り消すにはgit reset --softやgit revertを状況に応じて使い分けます。"}
 {"doc_id": 12, "text": "雨天時は運動会が体育館で実施される予定です。"}
@@ -78,7 +83,8 @@ All data files must be in NDJSON format, where:
 
 **Purpose**: Maps each query to its list of relevant (positive) documents.
 
-**Schema**:
+**Schema**
+
 ```json
 {
   "qid": <integer>,
@@ -86,7 +92,8 @@ All data files must be in NDJSON format, where:
 }
 ```
 
-**Fields**:
+**Fields**
+
 - `qid` (int): Query identifier (must exist in query master)
 - `positive_doc_ids` (list[int]): List of document IDs that are relevant to this query (must exist in document master)
 
@@ -97,7 +104,8 @@ All data files must be in NDJSON format, where:
 {"qid": 5, "positive_doc_ids": [21]}
 ```
 
-**Requirements**:
+**Requirements**
+
 - Each query must have **at least one** positive document
 - All document IDs must exist in the document master
 
@@ -107,7 +115,8 @@ All data files must be in NDJSON format, where:
 
 **Purpose**: Contains training triplets for contrastive learning. Each triplet consists of a query, a positive (relevant) document, and a negative (non-relevant) document.
 
-**Schema**:
+**Schema**
+
 ```json
 {
   "qid": <integer>,
@@ -116,12 +125,14 @@ All data files must be in NDJSON format, where:
 }
 ```
 
-**Fields**:
+**Fields**
+
 - `qid` (int): Query identifier (must exist in query master)
 - `pos_doc_id` (int): Positive document ID (must exist in document master and in the positive list for this query)
 - `neg_doc_id` (int): Negative document ID (must exist in document master)
 
-**Example**:
+**Example**
+
 ```json
 {"qid": 3, "pos_doc_id": 11, "neg_doc_id": 12}
 {"qid": 4, "pos_doc_id": 16, "neg_doc_id": 17}
@@ -129,7 +140,8 @@ All data files must be in NDJSON format, where:
 {"qid": 5, "pos_doc_id": 21, "neg_doc_id": 22}
 ```
 
-**Notes**:
+**Notes**
+
 - The number of triplets determines the dataset size for training
 - Multiple triplets can share the same query ID
 - The positive document must be in the query's positive list

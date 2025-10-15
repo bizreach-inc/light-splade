@@ -51,7 +51,8 @@ Same as the Positive Lists File in [Triplet-based data format](splade_triplet_da
 1. **Knowledge distillation** - The student model learns to mimic the teacher's scoring behavior
 2. **Hard negative mining** - Selecting challenging negative examples (high teacher score but not marked as positive)
 
-**Schema**:
+**Schema**
+
 ```json
 {
   "qid": <integer>,
@@ -63,11 +64,12 @@ Same as the Positive Lists File in [Triplet-based data format](splade_triplet_da
 }
 ```
 
-**Fields**:
+**Fields**
+
 - `qid` (int): Query identifier (must exist in query master)
 - `scores` (dict[int, float]): Dictionary mapping document IDs to their similarity scores from the teacher model
-  - Keys can be stored as strings or integers in JSON (will be converted to integers internally)
-  - Values are floating-point scores from the teacher model
+    - Keys can be stored as strings or integers in JSON (will be converted to integers internally)
+    - Values are floating-point scores from the teacher model
 
 **Example**:
 ```json
@@ -76,13 +78,15 @@ Same as the Positive Lists File in [Triplet-based data format](splade_triplet_da
 {"qid": 5, "scores": {"21": 0.89, "22": 0.18, "23": 0.27}}
 ```
 
-**Requirements**:
+**Requirements**
+
 - Every query in the positive list must have entries in the scores file
 - For each query, **all positive documents** must have scores
 - Scores should include hard negative candidates (documents with relatively high scores but not in the positive list)
 - The more candidate documents with scores, the better the hard negative mining
 
-**Notes on Teacher Scores**:
+**Notes on Teacher Scores**
+
 - Teacher model is typically a cross-encoder (e.g., cross-encoder/ms-marco-MiniLM-L-12-v2)
 - Scores represent the teacher's assessment of query-document relevance
 - Higher scores indicate higher relevance according to the teacher
@@ -107,7 +111,8 @@ data/
 └── hard-negatives-cross-encoder-scores.ndjson.gz
 ```
 
-**Important Notes**:
+**Important Notes**
+
 - Hard negative scores file is typically **shared** between train and validation sets (placed at the root)
 - No separate triplets file is needed (triplets are sampled dynamically)
 - The scores file can be large, so gzip compression is recommended
@@ -172,14 +177,16 @@ When loading a sample from the `TripletDistilDataset`, you receive a **5-tuple**
 (query_text, positive_doc_text, negative_doc_text, positive_score, negative_score)
 ```
 
-**Fields**:
+**Fields**
+
 1. `query_text` (str): The query text
 2. `positive_doc_text` (str): The positive (relevant) document text
 3. `negative_doc_text` (str): The negative (hard negative) document text
 4. `positive_score` (float): Teacher model's similarity score for (query, positive_doc) pair
 5. `negative_score` (float): Teacher model's similarity score for (query, negative_doc) pair
 
-**Example**:
+**Example**
+
 ```python
 (
   "Gitでコミットを取り消すにはどうすればよい？",
@@ -198,7 +205,8 @@ This data format is designed for **SPLADE training with knowledge distillation**
 2. **Hard Negative Mining**: Negative documents are sampled from candidates that the teacher rates highly but are not actually relevant
 3. **Soft Labels**: Teacher scores provide soft supervision signals in addition to hard labels (positive/negative)
 
-The model learns to:
+The model learns to
+
 - Score queries and documents in a sparse lexical space
 - Mimic the teacher model's scoring behavior through distillation loss
 - Rank positive documents higher than negative documents
@@ -209,7 +217,7 @@ According to the [SPLADE v2bis](https://arxiv.org/pdf/2010.02666) paper, distill
 
 ## Generating Hard Negative Scores
 
-To create the hard negative scores file, you typically:
+To create the hard negative scores file, you typically
 
 1. **Select a Teacher Model**: Use a strong cross-encoder
 2. **Generate Candidate Pool**: For each query, retrieve top-k documents using BM25 or another retrieval method (e.g., k=100-1000). Also add the positive documents to the candidate pool.
