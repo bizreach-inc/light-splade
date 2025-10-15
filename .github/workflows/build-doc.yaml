@@ -2,7 +2,7 @@ name: build-doc
 on:
   push:
     branches:
-      - feature/mkdocs
+      - main
 
 defaults:
   run:
