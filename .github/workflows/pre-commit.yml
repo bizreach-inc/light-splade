@@ -1,0 +1,25 @@
+name: pre-commit
+on:
+  pull_request:
+    types: [ opened, reopened, synchronize, ready_for_review ]
+  push:
+
+defaults:
+  run:
+    working-directory: ./
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "./.python-version"
+
+      - uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files -c ./.pre-commit-config.yaml
