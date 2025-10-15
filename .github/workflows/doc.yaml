@@ -25,7 +25,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Install the project
-        run: uv sync --all-extras
+        run: uv sync --group doc
 
       - name: Build doc
         run: uv run mkdocs gh-deploy
