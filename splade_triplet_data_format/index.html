@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Triplet-based - light-splade</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Triplet-based";
+        var mkdocs_page_input_path = "splade_triplet_data_format.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> light-splade
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Data format</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Triplet-based</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#file-format-ndjson">File Format: NDJSON</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#data-file-specifications">Data File Specifications</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-query-master-file">1. Query Master File</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-document-master-file">2. Document Master File</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3-positive-lists-file">3. Positive Lists File</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#4-triplets-file">4. Triplets File</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#data-organization">Data Organization</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#directory-structure">Directory Structure</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#configuration-example">Configuration Example</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#data-validation-rules">Data Validation Rules</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#dataset-output">Dataset Output</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#use-case">Use Case</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#reference">Reference</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../splade_triplet_distil_data_format/">Distillation-based</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../trouble_shooting/">Troubleshooting</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">light-splade</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Data format</li>
+      <li class="breadcrumb-item active">Triplet-based</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="splade-triplet-based-input-data-specification">SPLADE Triplet-based Input Data Specification<a class="headerlink" href="#splade-triplet-based-input-data-specification" title="Permanent link">&para;</a></h1>
+<p>This document describes the triplet-based input data format required for training SPLADE v2 (Sparse Lexical and Expansion) models using the light-splade framework.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>SPLADE triplet-based dataset consists of four types of data files, all in <strong>NDJSON (Newline Delimited JSON)</strong> format:</p>
+<ol>
+<li><strong>Query Master</strong> - Contains query texts and their IDs</li>
+<li><strong>Document Master</strong> - Contains document texts and their IDs</li>
+<li><strong>Positive Lists</strong> - Maps queries to their relevant documents</li>
+<li><strong>Triplets</strong> - Contains training triplets (query, positive doc, negative doc)</li>
+</ol>
+<h2 id="file-format-ndjson">File Format: NDJSON<a class="headerlink" href="#file-format-ndjson" title="Permanent link">&para;</a></h2>
+<p>All data files must be in NDJSON format, where:
+- Each line is a valid JSON object
+- Lines are separated by newline characters (<code>\n</code>)
+- Each file can contain multiple JSON objects, one per line
+- File extension is <code>.ndjson</code> for raw text.
+- File can be gzip-compressed for space efficiency (<code>.ndjson.gz</code>)</p>
+<h2 id="data-file-specifications">Data File Specifications<a class="headerlink" href="#data-file-specifications" title="Permanent link">&para;</a></h2>
+<h3 id="1-query-master-file">1. Query Master File<a class="headerlink" href="#1-query-master-file" title="Permanent link">&para;</a></h3>
+<p><strong>File naming convention</strong>: <code>query_master.ndjson</code></p>
+<p><strong>Purpose</strong>: Stores all query texts with their unique identifiers.</p>
+<p><strong>Schema</strong></p>
+<pre><code class="language-json">{
+  &quot;qid&quot;: &lt;integer&gt;,
+  &quot;text&quot;: &lt;string&gt;
+}
+</code></pre>
+<p><strong>Fields</strong></p>
+<ul>
+<li><code>qid</code> (int): Unique query identifier</li>
+<li><code>text</code> (str): The query text</li>
+</ul>
+<p><strong>Example</strong></p>
+<pre><code class="language-json">{&quot;qid&quot;: 3, &quot;text&quot;: &quot;Gitでコミットを取り消すにはどうすればよい？&quot;}
+{&quot;qid&quot;: 4, &quot;text&quot;: &quot;睡眠の質を改善するための習慣を教えて。&quot;}
+{&quot;qid&quot;: 5, &quot;text&quot;: &quot;Dockerコンテナのリソース使用量を制限したい。&quot;}
+</code></pre>
+<h3 id="2-document-master-file">2. Document Master File<a class="headerlink" href="#2-document-master-file" title="Permanent link">&para;</a></h3>
+<p><strong>File naming convention</strong>: <code>doc_master.ndjson</code></p>
+<p><strong>Purpose</strong>: Stores all document texts with their unique identifiers.</p>
+<p><strong>Schema</strong></p>
+<pre><code class="language-json">{
+  &quot;doc_id&quot;: &lt;integer&gt;,
+  &quot;text&quot;: &lt;string&gt;
+}
+</code></pre>
+<p><strong>Fields</strong></p>
+<ul>
+<li><code>doc_id</code> (int): Unique document identifier</li>
+<li><code>text</code> (str): The document text</li>
+</ul>
+<p><strong>Example</strong></p>
+<pre><code class="language-json">{&quot;doc_id&quot;: 11, &quot;text&quot;: &quot;直前のコミットを取り消すにはgit reset --softやgit revertを状況に応じて使い分けます。&quot;}
+{&quot;doc_id&quot;: 12, &quot;text&quot;: &quot;雨天時は運動会が体育館で実施される予定です。&quot;}
+{&quot;doc_id&quot;: 13, &quot;text&quot;: &quot;紅葉の名所は朝の光でより美しく見えます。&quot;}
+</code></pre>
+<h3 id="3-positive-lists-file">3. Positive Lists File<a class="headerlink" href="#3-positive-lists-file" title="Permanent link">&para;</a></h3>
+<p><strong>File naming convention</strong>: <code>positive_lists.ndjson</code></p>
+<p><strong>Purpose</strong>: Maps each query to its list of relevant (positive) documents.</p>
+<p><strong>Schema</strong></p>
+<pre><code class="language-json">{
+  &quot;qid&quot;: &lt;integer&gt;,
+  &quot;positive_doc_ids&quot;: [&lt;integer&gt;, ...]
+}
+</code></pre>
+<p><strong>Fields</strong></p>
+<ul>
+<li><code>qid</code> (int): Query identifier (must exist in query master)</li>
+<li><code>positive_doc_ids</code> (list[int]): List of document IDs that are relevant to this query (must exist in document master)</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-json">{&quot;qid&quot;: 3, &quot;positive_doc_ids&quot;: [11, 100]}
+{&quot;qid&quot;: 4, &quot;positive_doc_ids&quot;: [16]}
+{&quot;qid&quot;: 5, &quot;positive_doc_ids&quot;: [21]}
+</code></pre>
+<p><strong>Requirements</strong></p>
+<ul>
+<li>Each query must have <strong>at least one</strong> positive document</li>
+<li>All document IDs must exist in the document master</li>
+</ul>
+<h3 id="4-triplets-file">4. Triplets File<a class="headerlink" href="#4-triplets-file" title="Permanent link">&para;</a></h3>
+<p><strong>File naming convention</strong>: <code>triplets.ndjson</code></p>
+<p><strong>Purpose</strong>: Contains training triplets for contrastive learning. Each triplet consists of a query, a positive (relevant) document, and a negative (non-relevant) document.</p>
+<p><strong>Schema</strong></p>
+<pre><code class="language-json">{
+  &quot;qid&quot;: &lt;integer&gt;,
+  &quot;pos_doc_id&quot;: &lt;integer&gt;,
+  &quot;neg_doc_id&quot;: &lt;integer&gt;
+}
+</code></pre>
+<p><strong>Fields</strong></p>
+<ul>
+<li><code>qid</code> (int): Query identifier (must exist in query master)</li>
+<li><code>pos_doc_id</code> (int): Positive document ID (must exist in document master and in the positive list for this query)</li>
+<li><code>neg_doc_id</code> (int): Negative document ID (must exist in document master)</li>
+</ul>
+<p><strong>Example</strong></p>
+<pre><code class="language-json">{&quot;qid&quot;: 3, &quot;pos_doc_id&quot;: 11, &quot;neg_doc_id&quot;: 12}
+{&quot;qid&quot;: 4, &quot;pos_doc_id&quot;: 16, &quot;neg_doc_id&quot;: 17}
+{&quot;qid&quot;: 4, &quot;pos_doc_id&quot;: 16, &quot;neg_doc_id&quot;: 18}
+{&quot;qid&quot;: 5, &quot;pos_doc_id&quot;: 21, &quot;neg_doc_id&quot;: 22}
+</code></pre>
+<p><strong>Notes</strong></p>
+<ul>
+<li>The number of triplets determines the dataset size for training</li>
+<li>Multiple triplets can share the same query ID</li>
+<li>The positive document must be in the query's positive list</li>
+<li>This triplet data is available in training set only</li>
+<li>As in contrastive learning, the relative distance between a query and its positive document versus negative documents is crucial. The way positive and negative document pairs are selected to form triplets can significantly affect model quality.</li>
+</ul>
+<h2 id="data-organization">Data Organization<a class="headerlink" href="#data-organization" title="Permanent link">&para;</a></h2>
+<h3 id="directory-structure">Directory Structure<a class="headerlink" href="#directory-structure" title="Permanent link">&para;</a></h3>
+<p>For a complete training setup, organize your data as follows:</p>
+<pre><code>data/
+├── train/
+│   ├── query_master.ndjson
+│   ├── doc_master.ndjson
+│   ├── positive_lists.ndjson
+│   └── triplets.ndjson
+└── validation/
+    ├── query_master.ndjson
+    ├── doc_master.ndjson
+    └── positive_lists.ndjson
+</code></pre>
+<h3 id="configuration-example">Configuration Example<a class="headerlink" href="#configuration-example" title="Permanent link">&para;</a></h3>
+<p>Reference your data files in the YAML configuration:</p>
+<pre><code class="language-yaml">DATA_PATH: data/mmarco_ja_4_splade_triplet
+
+train_doc_master: ${.DATA_PATH}/train/doc_master.ndjson
+train_query_master: ${.DATA_PATH}/train/query_master.ndjson
+train_positives: ${.DATA_PATH}/train/positive_lists.ndjson
+train_triplets: ${.DATA_PATH}/train/triplets.ndjson
+
+validation_doc_master: ${.DATA_PATH}/validation/doc_master.ndjson
+validation_query_master: ${.DATA_PATH}/validation/query_master.ndjson
+validation_positives: ${.DATA_PATH}/validation/positive_lists.ndjson
+</code></pre>
+<p>We use Hydra configuration, which supports interpolation in YAML files. For example, ${.DATA_PATH} will be dynamically replaced with the value of the key DATA_PATH.</p>
+<h2 id="data-validation-rules">Data Validation Rules<a class="headerlink" href="#data-validation-rules" title="Permanent link">&para;</a></h2>
+<p>The <code>TripletDataset</code> class enforces the following validation rules:</p>
+<ol>
+<li><strong>Query Coverage</strong>: Every query ID in the positive list must exist in the query master</li>
+<li><strong>Query Completeness</strong>: Every query ID in the query master must have entries in the positive list</li>
+<li><strong>Document Existence</strong>: All document IDs referenced in the positive lists must exist in the document master</li>
+<li><strong>Positive Requirement</strong>: Every query must have at least one positive document</li>
+</ol>
+<p>If any validation rule fails, the system will raise a <code>ValueError</code> with a specific error message including the problematic ID for easy debugging.</p>
+<h2 id="dataset-output">Dataset Output<a class="headerlink" href="#dataset-output" title="Permanent link">&para;</a></h2>
+<p>When loading a sample from the <code>TripletDataset</code>, you receive a 3-tuple of strings:</p>
+<pre><code class="language-python">(query_text, positive_doc_text, negative_doc_text)
+</code></pre>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-python">(
+  &quot;Gitでコミットを取り消すにはどうすればよい？&quot;,
+  &quot;直前のコミットを取り消すにはgit reset --softやgit revertを状況に応じて使い分けます。&quot;,
+  &quot;雨天時は運動会が体育館で実施される予定です。&quot;
+)
+</code></pre>
+<h2 id="use-case">Use Case<a class="headerlink" href="#use-case" title="Permanent link">&para;</a></h2>
+<p>This data format is designed for <strong>SPLADE v2 training without distillation</strong>, using <code>in_batch_negatives</code> or <code>pairwise_contrastive</code> for contrastive learning. The model learns to:
+- Score queries and documents in a sparse lexical space
+- Rank positive documents higher than negative documents
+- Learn sparse, interpretable representations</p>
+<h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Implementation: <a href="../src/light_splade/data/triplet_dataset.py">triplet_dataset.py</a></li>
+<li>Data schemas: <a href="../src/light_splade/schemas/config/data_training.py">schemas/config/data_training.py</a> and <a href="../src/light_splade/schemas/data/__init__.py">schemas/data/<strong>init</strong>.py</a></li>
+<li>Example config: <a href="../config/data/toy_triplet_data.yaml">splade_data_mmarco_ja_triplet.yaml</a></li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../getting_started/" class="btn btn-neutral float-left" title="Getting Started"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../splade_triplet_distil_data_format/" class="btn btn-neutral float-right" title="Distillation-based">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../getting_started/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../splade_triplet_distil_data_format/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

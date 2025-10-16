@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="None" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>light-splade</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Home";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> light-splade
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#features">Features</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#setup">Setup</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#quickstart">Quickstart</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#input-data-format">Input Data format</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#references">References</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#license">License</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Data format</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="splade_triplet_data_format/">Triplet-based</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="splade_triplet_distil_data_format/">Distillation-based</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="trouble_shooting/">Troubleshooting</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">light-splade</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Home</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="light-splade">light-splade<a class="headerlink" href="#light-splade" title="Permanent link">&para;</a></h1>
+<p><code>light-splade</code> provides a minimal yet extensible PyTorch implementation of <code>SPLADE</code>, a family of sparse neural retrievers that expand queries and documents into interpretable sparse representations.</p>
+<p>Unlike dense retrievers, SPLADE produces <code>sparse vectors in the vocabulary space</code>, making it both <code>efficient to index</code> with standard IR engines (e.g., Lucene, Elasticsearch) and <code>interpretable</code>, while achieving strong retrieval effectiveness. It was first introduced in the paper “<a href="https://arxiv.org/abs/2107.05720">SPLADE: Sparse Lexical and Expansion Model for First Stage Ranking</a>”.</p>
+<p>This repository is designed for</p>
+<ul>
+<li>Practitioners wanting to <code>train SPLADE models on custom corpora</code>.</li>
+<li>Developers experimenting with <code>sparse lexical expansion</code> at scale.</li>
+<li>Researchers looking for a <code>reference implementation</code>.</li>
+</ul>
+<p>We currently support <code>SPLADE v2</code> and <code>SPLADE++</code></p>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Training pipeline for SPLADE using PyTorch + HuggingFace Transformers.</li>
+<li>Support for <code>distillation training</code> from dense retrievers (e.g., ColBERT, dense BERT).</li>
+<li>Export trained models into sparse representations compatible with IR systems.</li>
+<li>Simple, lightweight, and easy to extend for experiments.</li>
+</ul>
+<h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Python 3.11+.</li>
+<li>Recommended: use the <code>uv</code> tool to manage the virtual environment (see <a href="getting_started/">Getting started</a> document).</li>
+</ul>
+<p>Quick setup (recommended):</p>
+<pre><code class="language-bash">git clone https://github.com/bizreach-inc/light-splade.git
+cd light-splade
+# create and activate virtual env using uv
+uv venv --seed .venv
+source .venv/bin/activate
+uv sync
+</code></pre>
+<p>For developer checks, run:</p>
+<pre><code class="language-bash">uv run pre-commit run --all-files
+uv run pytest
+</code></pre>
+<h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p><strong>Train SPLADE with toy dataset (triplet-based)</strong>:</p>
+<ul>
+<li><code>uv run examples/run_train_splade_triplet.py --config-name toy_splade_ja</code></li>
+<li>To run on an environment without GPU, see this <a href="trouble_shooting/#running-the-training-script-on-cpu-only-machines">trouble shooting</a></li>
+</ul>
+<p>For full run instructions using <code>uv</code> and <code>Docker</code> commands, see <a href="getting_started/">Getting started</a>.</p>
+</li>
+<li>
+<p><strong>Convert text to sparse vector with SPLADE model using this package</strong></p>
+</li>
+</ul>
+<pre><code class="language-python">import torch
+from light_splade.models.splade import SpladeEncoder
+
+# Initialize the encoder
+encoder = SpladeEncoder(model_path=&quot;bizreach-inc/light-splade-japanese-28M&quot;)
+
+# Tokenize input text
+corpus = [
+    &quot;日本の首都は東京です。&quot;,
+    &quot;大阪万博は2025年に開催されます。&quot;
+]
+token_outputs = encoder.tokenizer(corpus, padding=True, return_tensors=&quot;pt&quot;)
+
+# Generate sparse representation
+with torch.inference_mode():
+    sparse_vecs = encoder.get_sparse(
+        input_ids=token_outputs[&quot;input_ids&quot;],
+        attention_mask=token_outputs[&quot;attention_mask&quot;]
+    )
+
+print(sparse_vecs[0])
+print(sparse_vecs[1])
+</code></pre>
+<ul>
+<li><strong>Convert text to sparse vector with SPLADE model using <code>transformers</code> package</strong></li>
+</ul>
+<pre><code class="language-python">import torch
+from transformers import AutoTokenizer, AutoModelForMaskedLM
+
+
+def dense_to_sparse(dense: torch.tensor, idx2token: dict[int, str]) -&gt; list[dict[str, float]]:
+    rows, cols = dense.nonzero(as_tuple=True)
+    rows = rows.tolist()
+    cols = cols.tolist()
+    weights = dense[rows, cols].tolist()
+
+    sparse_vecs = [{} for _ in range(dense.size(0))]
+    for row, col, weight in zip(rows, cols, weights):
+        sparse_vecs[row][idx2token[col]] = round(weight, 2)
+
+    for i in range(len(sparse_vecs)):
+        sparse_vecs[i] = dict(sorted(sparse_vecs[i].items(), key=lambda x: x[1], reverse=True))
+    return sparse_vecs
+
+
+MODEL_PATH = &quot;bizreach-inc/light-splade-japanese-28M&quot;
+device = &quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;
+transformer = AutoModelForMaskedLM.from_pretrained(MODEL_PATH).to(device)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+idx2token = {idx: token for token, idx in tokenizer.get_vocab().items()}
+
+corpus = [
+    &quot;日本の首都は東京です。&quot;,
+    &quot;大阪万博は2025年に開催されます。&quot;
+]
+token_outputs = tokenizer(corpus, padding=True, return_tensors=&quot;pt&quot;)
+attention_mask = token_outputs[&quot;attention_mask&quot;].to(device)
+token_outputs = {key: value.to(device) for key, value in token_outputs.items()}
+
+with torch.inference_mode():
+    outputs = transformer(**token_outputs)
+    dense, _ = torch.max(
+        torch.log(1 + torch.relu(outputs.logits)) * attention_mask.unsqueeze(-1),
+        dim=1,
+    )
+sparse_vecs = dense_to_sparse(dense, idx2token)
+
+print(sparse_vecs[0])
+print(sparse_vecs[1])
+</code></pre>
+<ul>
+<li><strong>Output</strong></li>
+</ul>
+<pre><code>{'首都': 1.83, '日本': 1.82, '東京': 1.78, '中立': 0.73, '都会': 0.69, '駒': 0.68, '州都': 0.67, '首相': 0.64, '足立': 0.62, 'です': 0.61, '都市': 0.54, 'ユニ': 0.54, '京都': 0.52, '国': 0.51, '発表': 0.49, '成田': 0.48, '太陽': 0.45, '藤原': 0.45, '私立': 0.42, '王国': 0.4...}
+{'202': 1.61, '開催': 1.49, '大阪': 1.34, '万博': 1.19, '東京': 1.15, '年': 1.1, 'いつ': 1.05, '##5': 1.03, '203': 0.86, '月': 0.8, '期間': 0.79, '高槻': 0.79, '京都': 0.7, '神戸': 0.62, '2024': 0.54, '夢': 0.52, '206': 0.52, '姫路': 0.51, '行わ': 0.49, 'こう': 0.49, '芸術': 0.48...}
+</code></pre>
+<h2 id="input-data-format">Input Data format<a class="headerlink" href="#input-data-format" title="Permanent link">&para;</a></h2>
+<p>Detailed data format docs:</p>
+<ul>
+<li><a href="splade_triplet_data_format/">Triplet format</a> (<code>SPLADE v2</code>)</li>
+<li><a href="splade_triplet_distil_data_format/">Distillation format</a> (<code>SPLADE++</code> or <code>SPLADE v2bis</code>)</li>
+</ul>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2109.10086">SPLADE v2: Sparse Lexical and Expansion Model for Information Retrieval</a>. arxiv (SPLADE v2)</li>
+<li>
+<p>Thibault Formal, Benjamin Piwowarski, Carlos Lassance, Stéphane Clinchant.</p>
+</li>
+<li>
+<p><a href="http://arxiv.org/abs/2205.04733">From Distillation to Hard Negative Sampling: Making Sparse Neural IR Models More Effective</a>. SIGIR22 short paper (SPLADE++ or SPLADE v2bis)</p>
+</li>
+<li>
+<p>Thibault Formal, Carlos Lassance, Benjamin Piwowarski, Stéphane Clinchant.</p>
+</li>
+<li>
+<p>For <code>transformers</code> docs:</p>
+</li>
+<li><a href="https://huggingface.co/docs/transformers/v4.56.1/en/main_classes/trainer">Trainer docs (transformers v4.56.1)</a></li>
+<li><a href="https://huggingface.co/docs/transformers/v4.56.1/en/main_classes/trainer#transformers.TrainingArguments">TrainingArguments docs (transformers v4.56.1)</a></li>
+</ul>
+<h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
+<p>This project is licensed under the Apache License, Version 2.0 — see the <code>LICENSE</code> file for details.</p>
+<p>Copyright 2025 BizReach, Inc.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="getting_started/" class="btn btn-neutral float-right" title="Getting Started">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+      <span><a href="getting_started/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.6.1
+Build Date UTC : 2025-10-16 15:12:25.201101+00:00
+-->
