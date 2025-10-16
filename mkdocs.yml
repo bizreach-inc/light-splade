@@ -1,0 +1,20 @@
+site_name: light-splade
+
+
+theme: readthedocs
+
+markdown_extensions:
+  - toc:
+      permalink: true
+
+plugins:
+  - include-markdown:
+      rewrite_relative_urls: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting_started.md
+  - Data format:
+      - Triplet-based: splade_triplet_data_format.md
+      - Distillation-based: splade_triplet_distil_data_format.md
+  - Troubleshooting: trouble_shooting.md
