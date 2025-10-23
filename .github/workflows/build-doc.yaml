@@ -2,7 +2,7 @@ name: build-doc
 on:
   push:
     branches:
-      - fix/gh-action-build-doc
+      - main
 
 defaults:
   run:
