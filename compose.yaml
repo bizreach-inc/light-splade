@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   common:
     network_mode: host
@@ -51,7 +50,7 @@ services:
 
   convert-mmarco-ja-triplet:
     extends: common
-    entrypoint: "examples/train_splade_distil_pipeline.sh convert-mmarco-ja-triplet"
+    entrypoint: "examples/train_splade_triplet_pipeline.sh convert-mmarco-ja-triplet"
 
   train-splade-triplet:
     extends: common
