@@ -173,7 +173,7 @@ class TestSpladeEncoder:
         # Create a dense vector with some non-zero values
         dense = torch.tensor([0.0, 2.5, 1.8, 0.0, 3.1])
 
-        result = encoder.to_sparse(dense)
+        result = encoder.to_sparse(dense)[0]
 
         assert isinstance(result, dict)
         assert len(result) == 3  # Only non-zero values
@@ -194,7 +194,7 @@ class TestSpladeEncoder:
 
         # Mock forward and to_sparse methods
         encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0], [0.5, 1.5]]))
-        encoder.to_sparse = Mock(side_effect=[{"hello": 2.0}, {"world": 1.5}])
+        encoder.to_sparse = Mock(side_effect=[[{"hello": 2.0}, {"world": 1.5}]])
 
         input_ids = torch.tensor([[1, 2], [1, 2]])
         attention_mask = torch.tensor([[1, 1], [1, 1]])

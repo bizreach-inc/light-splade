@@ -80,14 +80,11 @@ corpus = [
     "日本の首都は東京です。",
     "大阪万博は2025年に開催されます。"
 ]
-token_outputs = encoder.tokenizer(corpus, padding=True, return_tensors="pt")
 
 # Generate sparse representation
 with torch.inference_mode():
-    sparse_vecs = encoder.get_sparse(
-        input_ids=token_outputs["input_ids"],
-        attention_mask=token_outputs["attention_mask"]
-    )
+    embeddings = encoder.encode(corpus)
+    sparse_vecs = encoder.to_sparse(embeddings)
 
 print(sparse_vecs[0])
 print(sparse_vecs[1])

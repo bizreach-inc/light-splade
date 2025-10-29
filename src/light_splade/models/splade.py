@@ -43,11 +43,11 @@ import os
 from logging import getLogger
 
 import torch
+from tqdm import tqdm
 from transformers import AutoModelForMaskedLM
 from transformers import AutoTokenizer
 from transformers import PreTrainedTokenizer
 
-from light_splade.schemas.types import SPARSE_VECTOR
 from light_splade.schemas.types import SPARSE_VECTOR_LIST
 from light_splade.utils.model import contiguous
 
@@ -81,8 +81,14 @@ class SpladeEncoder(torch.nn.Module):
         agg: Aggregation function over token positions, either ``"max"`` or ``"sum"``.
     """
 
-    def __init__(self, model_path: str, agg: str = "max"):
+    def __init__(
+        self,
+        model_path: str,
+        agg: str = "max",
+        device: str | None = None,
+    ) -> None:
         assert agg in ["max", "sum"], f"agg must be one of ['max', 'sum'], but got {agg}"
+        self.device: str = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
 
         super().__init__()
         self.from_pretrained(model_path)
@@ -118,22 +124,22 @@ class SpladeEncoder(torch.nn.Module):
         # vectors (b, V), which are weights `w_j` of the input query/doc over the vocab
         return vecs
 
-    def to_sparse(self, dense: torch.Tensor) -> SPARSE_VECTOR:
+    def to_sparse(self, dense: torch.Tensor) -> SPARSE_VECTOR_LIST:
         """Convert a single dense (vocab-sized) vector to a sparse dict.
 
         Note:
-            Current implementation handles one vector at a time. The returned
-            dictionary maps token strings to rounded float scores in
-            descending order.
+            Current implementation handles one vector at a time. The returned dictionary maps token strings to rounded
+            float scores in descending order.
 
         Args:
-            dense: 1D tensor of shape (V,) or a 2D tensor where a single vector
-                slice is passed.
+            dense: 1D tensor of shape (V,) for a single vector or a 2D tensor for multi vectors.
 
         Returns:
-            Mapping from token string to float score representing non-zero
-            activations for the vector.
+            Mapping from token string to float score representing non-zero activations for the vector.
         """
+
+        if len(dense.shape) == 2:
+            return [self.to_sparse(dense[i])[0] for i in range(len(dense))]
 
         # TODO: check this code to support batch (this code currently supports only 1 vector) extract non-zero positions
         cols = dense.nonzero().squeeze().detach().cpu().tolist()
@@ -148,10 +154,10 @@ class SpladeEncoder(torch.nn.Module):
             self.idx2token[idx]: round(weight, 2) for idx, weight in zip(cols, weights)
         }
         # sort so most relevant tokens appear first
-        sparse_dict_tokens: dict[str, float] = {
+        sparse_vector: dict[str, float] = {
             k: v for k, v in sorted(sparse_dict_tokens_.items(), key=lambda item: item[1], reverse=True)
         }
-        return sparse_dict_tokens
+        return [sparse_vector]
 
     def get_sparse(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> SPARSE_VECTOR_LIST:
         """Return sparse representations for a batch of inputs.
@@ -163,9 +169,43 @@ class SpladeEncoder(torch.nn.Module):
         Returns:
             A list of sparse dictionaries, one per batch element.
         """
-        dense = self.forward(input_ids=input_ids, attention_mask=attention_mask)
-        sparse_vecs = [self.to_sparse(dense[i]) for i in range(len(dense))]
+        embeddings = self.forward(input_ids=input_ids, attention_mask=attention_mask)
+        sparse_vecs = self.to_sparse(embeddings)
         return sparse_vecs
+
+    def encode(
+        self,
+        sentences: list[str],
+        batch_size: int = 32,
+        show_progress_bar: bool = False,
+    ) -> torch.Tensor:
+        """Encode a list of sentences into embeddings (dense vectors)
+
+        Args:
+            sentences (list[str]): List of sentences to encode.
+            batch_size (int): Batch size for encoding.
+            show_progress_bar (bool): Whether to show a progress bar during encoding.
+
+        Returns:
+            A tensor of shape (b, V) containing the encoded representations.
+        """
+
+        progress = tqdm(range(0, len(sentences), batch_size), disable=not show_progress_bar)
+
+        embeddings_list = []
+        for start in progress:
+            end = min(start + batch_size, len(sentences))
+            batch_sentences = sentences[start:end]
+            token_outputs = self.tokenizer(batch_sentences, padding=True, return_tensors="pt").to(self.device)
+
+            with torch.inference_mode():
+                embeddings_ = self.forward(
+                    input_ids=token_outputs["input_ids"], attention_mask=token_outputs["attention_mask"]
+                ).cpu()
+                embeddings_list.append(embeddings_)
+
+        embeddings = torch.vstack(embeddings_list)
+        return embeddings
 
 
 class Splade(torch.nn.Module):
@@ -205,6 +245,7 @@ class Splade(torch.nn.Module):
         q_model_path: str | None = None,
         freeze_d_model: bool = False,
         agg: str = "max",
+        device: str | None = None,
     ) -> None:
         """Create a Splade model.
 
@@ -223,11 +264,13 @@ class Splade(torch.nn.Module):
             )
 
         super().__init__()
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        self.d_encoder = SpladeEncoder(d_model_path, agg=agg)
+        self.d_encoder = SpladeEncoder(d_model_path, agg=agg, device=device)
         self.q_encoder = self.d_encoder
         if q_model_path:
-            self.q_encoder = SpladeEncoder(q_model_path, agg=agg)
+            self.q_encoder = SpladeEncoder(q_model_path, agg=agg, device=device)
         if freeze_d_model:
             self.d_encoder.requires_grad_(False)
         self.is_shared_weights = q_model_path is None
@@ -272,7 +315,7 @@ class Splade(torch.nn.Module):
 
         return dict(q_vector=q_vec, d_vector=d_vec)
 
-    def to_sparse(self, denses: dict[str, torch.Tensor]) -> dict[str, dict[str, float]]:
+    def to_sparse(self, denses: dict[str, torch.Tensor]) -> dict[str, SPARSE_VECTOR_LIST]:
         """Convert dense vectors produced by :meth:`forward` to sparse dicts.
 
         Args:
