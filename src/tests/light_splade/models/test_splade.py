@@ -77,8 +77,7 @@ class TestSpladeEncoder:
             "world": 2,
             "splade": 4,
             "[PAD]": 0,
-            "[CLS]": 101,
-            "[SEP]": 102,
+            "[CLS]": 3,
         }
         return mock_model, mock_tokenizer
 
@@ -129,7 +128,7 @@ class TestSpladeEncoder:
         mock_auto_model.from_pretrained.assert_called_with(model_path, trust_remote_code=True)
         mock_auto_tokenizer.from_pretrained.assert_called_with(model_path, trust_remote_code=True)
 
-        assert encoder.idx2token == {1: "hello", 2: "world", 4: "splade", 0: "[PAD]", 101: "[CLS]", 102: "[SEP]"}
+        assert encoder.idx2token == {1: "hello", 2: "world", 4: "splade", 0: "[PAD]", 3: "[CLS]"}
 
     @patch("light_splade.models.splade.AutoModelForMaskedLM")
     @patch("light_splade.models.splade.AutoTokenizer")
@@ -155,6 +154,25 @@ class TestSpladeEncoder:
 
         assert result.shape == (1, 3)  # batch_size=1, vocab_size=3
 
+    @pytest.mark.parametrize(
+        "dense, exp_nnzs, should_raise",
+        [
+            (torch.tensor([[0.0, 2.5, 1.8, 0.0, 3.1]]), [3], False),
+            (
+                torch.tensor(
+                    [
+                        [0.0, 2.5, 1.8, 0.0, 3.1],
+                        [0.1, 1.4, 0.2, 0.3, 0.9],
+                    ]
+                ),
+                [3, 5],
+                False,
+            ),
+            (torch.tensor([[0.0, 0.0, 0.0, 0.0, 0.0]]), [0], False),
+            (torch.tensor([0.0, 2.5, 1.8, 0.0, 3.1]), [3], True),
+            (torch.tensor([[[0.0, 2.5, 1.8, 0.0, 3.1]]]), [3], True),
+        ],
+    )
     @patch("light_splade.models.splade.AutoModelForMaskedLM")
     @patch("light_splade.models.splade.AutoTokenizer")
     def test_to_sparse(
@@ -162,6 +180,9 @@ class TestSpladeEncoder:
         mock_auto_tokenizer: Mock,
         mock_auto_model: Mock,
         mock_model_and_tokenizer: tuple[Mock, Mock],
+        dense: torch.Tensor,
+        exp_nnzs: list[int],
+        should_raise: bool,
     ) -> None:
         mock_model, mock_tokenizer = mock_model_and_tokenizer
         mock_auto_model.from_pretrained.return_value = mock_model
@@ -170,16 +191,20 @@ class TestSpladeEncoder:
         encoder = SpladeEncoder("test-model-path")
         encoder.tokenizer = mock_tokenizer
 
-        # Create a dense vector with some non-zero values
-        dense = torch.tensor([0.0, 2.5, 1.8, 0.0, 3.1])
+        if should_raise:
+            with pytest.raises((ValueError)):
+                encoder.to_sparse(dense)
+        else:
+            results = encoder.to_sparse(dense)
 
-        result = encoder.to_sparse(dense)[0]
+            assert len(results) == len(exp_nnzs)
+            for result, expected_nnz in zip(results, exp_nnzs):
+                assert isinstance(result, dict)
+                assert len(result) == expected_nnz
 
-        assert isinstance(result, dict)
-        assert len(result) == 3  # Only non-zero values
-        # Values should be sorted by weight in descending order
-        values = list(result.values())
-        assert values == sorted(values, reverse=True)
+                # Values should be sorted by weight in descending order
+                values = list(result.values())
+                assert values == sorted(values, reverse=True)
 
     @patch("light_splade.models.splade.AutoModelForMaskedLM")
     @patch("light_splade.models.splade.AutoTokenizer")

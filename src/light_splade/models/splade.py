@@ -125,39 +125,39 @@ class SpladeEncoder(torch.nn.Module):
         return vecs
 
     def to_sparse(self, dense: torch.Tensor) -> SPARSE_VECTOR_LIST:
-        """Convert a single dense (vocab-sized) vector to a sparse dict.
+        """Convert dense (vocab-sized) vectors to sparse dicts.
 
         Note:
-            Current implementation handles one vector at a time. The returned dictionary maps token strings to rounded
-            float scores in descending order.
+            Each dictionary in the returned list maps token strings to rounded float scores in descending order.
 
         Args:
-            dense: 1D tensor of shape (V,) for a single vector or a 2D tensor for multi vectors.
+            dense: 2D tensor for multi vectors, or 1D tensor for a single vector.
 
         Returns:
-            Mapping from token string to float score representing non-zero activations for the vector.
+            List of mappings from token string to float score representing non-zero activations for the sparse vectors.
+            Even if the input is a single vector, the output is still a list containing one dictionary.
         """
 
-        if len(dense.shape) == 2:
-            return [self.to_sparse(dense[i])[0] for i in range(len(dense))]
+        if len(dense.shape) != 2:
+            raise ValueError("`dense` must be a 2D tensor representing a batch of vectors.")
 
-        # TODO: check this code to support batch (this code currently supports only 1 vector) extract non-zero positions
-        cols = dense.nonzero().squeeze().detach().cpu().tolist()
-        if not isinstance(cols, list):
-            cols = [cols]
+        n_vectors = dense.shape[0]
+        if n_vectors == 0:
+            return []
 
-        # extract the non-zero values
-        weights = dense[cols].detach().cpu().tolist()
+        nz_indices = dense.nonzero()
+        rows = nz_indices[:, 0].tolist()
+        cols = nz_indices[:, 1].tolist()
+        weights = dense[rows, cols].tolist()
+        sparse_dicts: SPARSE_VECTOR_LIST = [{} for _ in range(dense.shape[0])]
+        for row, col, weight in zip(rows, cols, weights):
+            sparse_dicts[row][self.idx2token[col]] = round(weight, 4)
 
-        # map token IDs to human-readable tokens and round scores for display
-        sparse_dict_tokens_: dict[str, float] = {
-            self.idx2token[idx]: round(weight, 2) for idx, weight in zip(cols, weights)
-        }
-        # sort so most relevant tokens appear first
-        sparse_vector: dict[str, float] = {
-            k: v for k, v in sorted(sparse_dict_tokens_.items(), key=lambda item: item[1], reverse=True)
-        }
-        return [sparse_vector]
+        sparse_dicts = [
+            {k: v for k, v in sorted(sparse_dict.items(), key=lambda item: item[1], reverse=True)}
+            for sparse_dict in sparse_dicts
+        ]
+        return sparse_dicts
 
     def get_sparse(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> SPARSE_VECTOR_LIST:
         """Return sparse representations for a batch of inputs.
