@@ -68,9 +68,10 @@ uv run pytest
 
 - **Convert text to sparse vector with SPLADE model using this package**
 
+
 ```python
 import torch
-from light_splade.models.splade import SpladeEncoder
+from light_splade import SpladeEncoder
 
 # Initialize the encoder
 encoder = SpladeEncoder(model_path="bizreach-inc/light-splade-japanese-28M")
@@ -80,20 +81,25 @@ corpus = [
     "日本の首都は東京です。",
     "大阪万博は2025年に開催されます。"
 ]
-token_outputs = encoder.tokenizer(corpus, padding=True, return_tensors="pt")
 
 # Generate sparse representation
 with torch.inference_mode():
-    sparse_vecs = encoder.get_sparse(
-        input_ids=token_outputs["input_ids"],
-        attention_mask=token_outputs["attention_mask"]
-    )
+    embeddings = encoder.encode(corpus)
+    sparse_vecs = encoder.to_sparse(embeddings)
 
 print(sparse_vecs[0])
 print(sparse_vecs[1])
 ```
 
 - **Convert text to sparse vector with SPLADE model using `transformers` package**
+
+Install required packages
+
+```
+pip install fugashi torch transformers unidic-lite
+```
+
+Then execute the following Python code
 
 ```python
 import torch

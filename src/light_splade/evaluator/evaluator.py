@@ -121,19 +121,12 @@ class Evaluator:
                 end = min(start + self.batch_size, len(doc_ids))
                 batch_doc_ids = [str(doc_id) for doc_id in doc_ids[start:end]]
                 batch_texts = doc_texts[start:end]
-                tokens = self.data_collator.tokenize(batch_texts)
-
-                dense = (
-                    self.model.d_encoder(
-                        input_ids=tokens["input_ids"].to(self.device),
-                        attention_mask=tokens["attention_mask"].to(self.device),
-                    )
-                    .detach()
-                    .cpu()
-                    .numpy()
-                )
-                # TODO: feed dense vectors to indexer to speed up.
-                indexer.index_docs(batch_doc_ids, dense, use_cache=True)
+                embeddings = self.model.d_encoder.encode(
+                    batch_texts,
+                    batch_size=self.batch_size,
+                    max_text_length=self.data_collator.max_length,
+                ).numpy()
+                indexer.index_docs(batch_doc_ids, embeddings, use_cache=True)
 
         indexer.finalize_indexing()
         return indexer
