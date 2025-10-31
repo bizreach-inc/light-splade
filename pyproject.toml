@@ -30,7 +30,7 @@ requires = ["setuptools >= 64", "setuptools-scm>=8"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["light_splade.*"]
+include = ["light_splade"]
 
 [dependency-groups]
 dev = [
