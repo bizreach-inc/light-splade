@@ -121,7 +121,11 @@ class Evaluator:
                 end = min(start + self.batch_size, len(doc_ids))
                 batch_doc_ids = [str(doc_id) for doc_id in doc_ids[start:end]]
                 batch_texts = doc_texts[start:end]
-                embeddings = self.model.d_encoder.encode(batch_texts).numpy()
+                embeddings = self.model.d_encoder.encode(
+                    batch_texts,
+                    batch_size=self.batch_size,
+                    max_text_length=self.data_collator.max_length,
+                ).numpy()
                 indexer.index_docs(batch_doc_ids, embeddings, use_cache=True)
 
         indexer.finalize_indexing()

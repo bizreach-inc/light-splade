@@ -175,33 +175,45 @@ class SpladeEncoder(torch.nn.Module):
 
     def encode(
         self,
-        sentences: list[str],
+        texts: list[str],
         batch_size: int = 32,
+        max_text_length: int | None = None,
         show_progress_bar: bool = False,
     ) -> torch.Tensor:
-        """Encode a list of sentences into embeddings (dense vectors)
+        """Encode a list of texts into embeddings (dense vectors)
 
         Args:
-            sentences (list[str]): List of sentences to encode.
+            texts (list[str]): List of texts to encode.
             batch_size (int): Batch size for encoding.
+            max_text_length (int | None): Maximum token length for truncation.
+                If None, use model's max position embeddings.
             show_progress_bar (bool): Whether to show a progress bar during encoding.
 
         Returns:
             A tensor of shape (b, V) containing the encoded representations.
         """
 
-        progress = tqdm(range(0, len(sentences), batch_size), disable=not show_progress_bar)
+        progress = tqdm(range(0, len(texts), batch_size), disable=not show_progress_bar)
+        if max_text_length is None:
+            # FIXME: avoid accessing BERT-specific config here
+            max_text_length = self.transformer.config.max_position_embeddings
 
         embeddings_list = []
         for start in progress:
-            end = min(start + batch_size, len(sentences))
-            batch_sentences = sentences[start:end]
-            token_outputs = self.tokenizer(batch_sentences, padding=True, return_tensors="pt").to(self.device)
+            end = min(start + batch_size, len(texts))
+            batch_texts = texts[start:end]
+            tokens = self.tokenizer(
+                batch_texts,
+                add_special_tokens=True,
+                padding="longest",
+                truncation="longest_first",
+                max_length=max_text_length,
+                return_attention_mask=True,
+                return_tensors="pt",
+            ).to(self.device)
 
             with torch.inference_mode():
-                embeddings_ = self.forward(
-                    input_ids=token_outputs["input_ids"], attention_mask=token_outputs["attention_mask"]
-                ).cpu()
+                embeddings_ = self.forward(input_ids=tokens["input_ids"], attention_mask=tokens["attention_mask"]).cpu()
                 embeddings_list.append(embeddings_)
 
         embeddings = torch.vstack(embeddings_list)
