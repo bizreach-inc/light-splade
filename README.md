@@ -71,7 +71,7 @@ uv run pytest
 
 ```python
 import torch
-from light_splade.models.splade import SpladeEncoder
+from light_splade import SpladeEncoder
 
 # Initialize the encoder
 encoder = SpladeEncoder(model_path="bizreach-inc/light-splade-japanese-28M")
