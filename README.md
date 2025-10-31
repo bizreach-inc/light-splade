@@ -68,6 +68,7 @@ uv run pytest
 
 - **Convert text to sparse vector with SPLADE model using this package**
 
+
 ```python
 import torch
 from light_splade.models.splade import SpladeEncoder
@@ -91,6 +92,14 @@ print(sparse_vecs[1])
 ```
 
 - **Convert text to sparse vector with SPLADE model using `transformers` package**
+
+Install required packages
+
+```
+pip install fugashi torch transformers unidic-lite
+```
+
+Then execute the following Python code
 
 ```python
 import torch
