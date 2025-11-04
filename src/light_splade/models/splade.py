@@ -97,6 +97,7 @@ class SpladeEncoder(torch.nn.Module):
     def from_pretrained(self, model_path: str) -> None:
         """Load transformer model and tokenizer from ``model_path``."""
         self.transformer = AutoModelForMaskedLM.from_pretrained(model_path, trust_remote_code=True)
+        self.transformer.to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
         # build mapping from index to token text
