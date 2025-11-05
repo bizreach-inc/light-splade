@@ -27,6 +27,7 @@ The evaluation is intentionally lightweight to allow frequent validation without
 from logging import getLogger
 
 import torch
+from scipy import sparse as sps
 from tqdm import tqdm
 
 from light_splade.data import BaseSpladeCollator
@@ -121,12 +122,14 @@ class Evaluator:
                 end = min(start + self.batch_size, len(doc_ids))
                 batch_doc_ids = [str(doc_id) for doc_id in doc_ids[start:end]]
                 batch_texts = doc_texts[start:end]
-                embeddings = self.model.d_encoder.encode(
+                csr_embeddings: sps.csr_matrix = self.model.d_encoder.encode(
                     batch_texts,
                     batch_size=self.batch_size,
                     max_text_length=self.data_collator.max_length,
-                ).numpy()
-                indexer.index_docs(batch_doc_ids, embeddings, use_cache=True)
+                    convert_to_tensor=False,
+                    convert_to_csr_matrix=True,
+                )  # type: ignore
+                indexer.index_docs(batch_doc_ids, csr_embeddings, use_cache=True)
 
         indexer.finalize_indexing()
         return indexer
@@ -172,13 +175,13 @@ class Evaluator:
                 qrels[str(qid)] = [str(doc_id) for doc_id in gt_doc_ids]
 
                 # vectorize the query and retrieve the top-K where K as the max from metrics
-                tokens = self.data_collator.tokenize([q_text])
-                sparse_vec = self.model.q_encoder.get_sparse(
-                    input_ids=tokens["input_ids"].to(self.device),
-                    attention_mask=tokens["attention_mask"].to(self.device),
-                )[0]
+                query_embeddings: sps.csr_matrix = self.model.q_encoder.encode(
+                    [q_text],
+                    convert_to_tensor=False,
+                    convert_to_csr_matrix=True,
+                )  # type: ignore
                 ranked_cand_ids = retriever.retrieve(
-                    [sparse_vec], target_doc_ids, top_k=max_k, threshold=score_threshold
+                    query_embeddings, target_doc_ids, top_k=max_k, threshold=score_threshold
                 )[0]
                 results[str(qid)] = ranked_cand_ids
 

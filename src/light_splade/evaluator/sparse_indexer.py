@@ -22,7 +22,6 @@ import numpy as np
 from scipy import sparse as sps
 
 from light_splade.schemas.types import ID_LIST
-from light_splade.schemas.types import SPARSE_VECTOR_LIST
 
 logger = getLogger(__name__)
 
@@ -89,32 +88,10 @@ class SparseIndexer:
         # Compute self.term2index from self.vocab
         self.term2index = {term: index for index, term in enumerate(self.vocab)}
 
-    def index_vectors(self, vectors: SPARSE_VECTOR_LIST | np.ndarray) -> sps.csr_matrix:
-        """Encode sparse vectors to csr_matrix.
-        This function can be used to index both documents and queries.
-        """
-        data = []
-        row_ind = []
-        col_ind = []
-
-        if not isinstance(vectors, list):  # dense vectors in form of ndarray
-            return sps.csr_matrix(vectors, dtype=self.dtype)
-
-        for i, sparse_vector in enumerate(vectors):
-            for term, score in sparse_vector.items():
-                col_ind.append(self.term2index[term])
-                row_ind.append(i)
-                data.append(score)
-        return sps.csr_matrix(
-            (data, (row_ind, col_ind)),
-            shape=(len(vectors), len(self.vocab)),
-            dtype=self.dtype,
-        )
-
     def index_docs(
         self,
         doc_ids: ID_LIST,
-        vectors: SPARSE_VECTOR_LIST | np.ndarray,
+        sparse_embeddings: sps.csr_matrix,
         use_cache: bool = False,
     ) -> None:
         """Receive sparse vectors and encode them in csr_matrix for fast similarity score computation. Currently,
@@ -124,23 +101,22 @@ class SparseIndexer:
 
         Args:
             doc_ids (ID_LIST): List of document IDs
-            vectors (SPARSE_VECTOR_LIST | np.ndarray): List of documents' sparse vectors
+            sparse_embeddings (sps.csr_matrix): Sparse matrix of document embeddings
             use_cache (bool): If True, the indexer will temporarily store the new sparse matrix and doc_ids into a
                 cache. The accumulated cache is merged into ``sparse_matrix`` and ``doc_id_list`` later via
                 :meth:`_merge_cache` to avoid calling ``sps.vstack`` on every batch which becomes slower as the main
                 matrix grows.
         """
-        assert len(doc_ids) == len(vectors)
+        assert len(doc_ids) == sparse_embeddings.shape[0]
 
         if not use_cache and not self.is_cache_empty():
             self._merge_cache()
 
         # encode the sparse vectors to csr_matrix
-        new_sparse_matrix = self.index_vectors(vectors)
         if not use_cache:
-            self._merge_sparse_matrix(doc_ids, new_sparse_matrix)
+            self._merge_sparse_matrix(doc_ids, sparse_embeddings)
         else:
-            self._save_cache(doc_ids, new_sparse_matrix)
+            self._save_cache(doc_ids, sparse_embeddings)
             if self._cache_size() > self.max_cache_size:
                 self._merge_cache()
 
@@ -190,24 +166,6 @@ class SparseIndexer:
         else:
             indices = [self.docid2index[doc_id] for doc_id in doc_ids]
             return self.sparse_matrix[indices]
-
-    def get_sparse_vectors(self, doc_ids: ID_LIST) -> SPARSE_VECTOR_LIST:
-        csr_enc = self.get_sparse_matrix(doc_ids)
-        indptr = csr_enc.indptr
-        indices = csr_enc.indices
-        data = csr_enc.data
-
-        vecs = []
-        for i in range(len(doc_ids)):
-            vec = dict()
-            for index, score in zip(
-                indices[indptr[i] : indptr[i + 1]],  # noqa
-                data[indptr[i] : indptr[i + 1]],  # noqa
-            ):
-                term = self.vocab[index]
-                vec[term] = score
-            vecs.append(vec)
-        return vecs
 
     def __len__(self) -> int:
         return int(self.sparse_matrix.shape[0])
