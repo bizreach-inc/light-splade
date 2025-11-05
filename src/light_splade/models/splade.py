@@ -44,7 +44,7 @@ from logging import getLogger
 
 import numpy as np
 import torch
-from scipy.sparse import csr_matrix
+from scipy import sparse as sps
 from tqdm import tqdm
 from transformers import AutoModelForMaskedLM
 from transformers import AutoTokenizer
@@ -185,7 +185,7 @@ class SpladeEncoder(torch.nn.Module):
         convert_to_numpy: bool = False,
         convert_to_csr_matrix: bool = False,
         show_progress_bar: bool = False,
-    ) -> torch.Tensor | np.ndarray | csr_matrix:
+    ) -> torch.Tensor | np.ndarray | sps.csr_matrix:
         """Encode a list of texts into embeddings (dense vectors)
 
         Args:
@@ -229,22 +229,24 @@ class SpladeEncoder(torch.nn.Module):
 
             with torch.inference_mode():
                 embeddings_ = self.forward(input_ids=tokens["input_ids"], attention_mask=tokens["attention_mask"]).cpu()
-                embeddings_list.append(embeddings_)
 
-        embeddings: torch.Tensor = (
-            torch.vstack(embeddings_list) if len(embeddings_list) > 0 else torch.empty((0, len(self.idx2token)))
-        )
+                if convert_to_numpy:
+                    embeddings_list.append(embeddings_.numpy())
+                elif convert_to_csr_matrix:
+                    nz_indices = embeddings_.nonzero()
+                    rows = nz_indices[:, 0].tolist()
+                    cols = nz_indices[:, 1].tolist()
+                    weights = embeddings_[rows, cols].tolist()
+                    embeddings_list.append(sps.csr_matrix((weights, (rows, cols)), shape=embeddings_.shape))
+                else:
+                    embeddings_list.append(embeddings_)
 
         if convert_to_numpy:
-            return embeddings.numpy()
-        if convert_to_csr_matrix:
-            nz_indices = embeddings.nonzero()
-            rows = nz_indices[:, 0].tolist()
-            cols = nz_indices[:, 1].tolist()
-            weights = embeddings[rows, cols].tolist()
-            return csr_matrix((weights, (rows, cols)), shape=embeddings.shape)
+            return np.vstack(embeddings_list) if len(embeddings_list) > 0 else np.empty((0, len(self.idx2token)))
+        elif convert_to_csr_matrix:
+            return sps.vstack(embeddings_list)
 
-        return embeddings
+        return torch.vstack(embeddings_list) if len(embeddings_list) > 0 else torch.empty((0, len(self.idx2token)))
 
 
 class Splade(torch.nn.Module):
