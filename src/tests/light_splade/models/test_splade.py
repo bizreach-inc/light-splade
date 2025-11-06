@@ -81,6 +81,7 @@ class TestSpladeEncoder:
             "[PAD]": 0,
             "[CLS]": 3,
         }
+        mock_model.config.max_position_embeddings = 512
         mock_auto_tokenizer = Mock()
         mock_auto_model = Mock()
         mock_auto_model.from_pretrained.return_value = mock_model
@@ -352,10 +353,10 @@ class TestSpladeEncoder:
 
     @patch("light_splade.models.splade.AutoModelForMaskedLM")
     @patch("light_splade.models.splade.AutoTokenizer")
-    def test_encode_max_text_length(
+    def test_encode_max_seq_length(
         self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
     ) -> None:
-        """Test that max_text_length is passed to tokenizer."""
+        """Test that max_seq_length is passed to tokenizer."""
         mock_model, mock_tokenizer = mock_model_and_tokenizer
         mock_auto_model.from_pretrained.return_value = mock_model
         mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
@@ -369,7 +370,7 @@ class TestSpladeEncoder:
         encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0]]))
 
         texts = ["hello world"]
-        encoder.encode(texts, max_text_length=128, show_progress_bar=False)
+        encoder.encode(texts, max_seq_length=128, show_progress_bar=False)
 
         # Verify tokenizer was called with max_length=128
         call_kwargs = mock_tokenizer.call_args[1]

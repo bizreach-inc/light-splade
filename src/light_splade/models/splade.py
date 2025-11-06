@@ -72,6 +72,20 @@ def is_same_tokenizers(tokenizer1: PreTrainedTokenizer, tokenizer2: PreTrainedTo
     return isinstance(tokenizer1, type(tokenizer2)) and tokenizer1.vocab == tokenizer2.vocab
 
 
+def get_avg_token_length(tokenizer: PreTrainedTokenizer) -> float:
+    """Compute average token lengths for each token in the tokenizer's vocabulary.
+
+    Args:
+        tokenizer (PreTrainedTokenizer): The tokenizer instance.
+
+    Returns:
+        Average token length as a float.
+    """
+    token_lens = [len(t) for t in tokenizer.get_vocab().keys()]
+    avg_token_length = sum(token_lens) / len(token_lens) if token_lens else 0
+    return avg_token_length
+
+
 class SpladeEncoder(torch.nn.Module):
     """Transformer-based encoder that emits aggregated token activations.
 
@@ -101,6 +115,8 @@ class SpladeEncoder(torch.nn.Module):
         self.transformer = AutoModelForMaskedLM.from_pretrained(model_path, trust_remote_code=True)
         self.transformer.to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+
+        self.avg_token_length = get_avg_token_length(self.tokenizer)
 
         # build mapping from index to token text
         self.idx2token = {idx: token for token, idx in self.tokenizer.get_vocab().items()}
@@ -180,7 +196,7 @@ class SpladeEncoder(torch.nn.Module):
         self,
         texts: list[str],
         batch_size: int = 32,
-        max_text_length: int | None = None,
+        max_seq_length: int | None = None,
         convert_to_tensor: bool = True,
         convert_to_numpy: bool = False,
         convert_to_csr_matrix: bool = False,
@@ -191,7 +207,7 @@ class SpladeEncoder(torch.nn.Module):
         Args:
             texts (list[str]): List of texts to encode.
             batch_size (int): Batch size for encoding.
-            max_text_length (int | None): Maximum token length for truncation.
+            max_seq_length (int | None): Maximum token length for truncation.
                 If None, use model's max position embeddings.
             convert_to_tensor (bool): Whether to return a PyTorch tensor. Default is True.
             convert_to_numpy (bool): Whether to return a NumPy array. Default is False.
@@ -209,9 +225,13 @@ class SpladeEncoder(torch.nn.Module):
             )
 
         progress = tqdm(range(0, len(texts), batch_size), disable=not show_progress_bar)
-        if max_text_length is None:
+        if max_seq_length is None:
             # FIXME: avoid accessing BERT-specific config here
-            max_text_length = self.transformer.config.max_position_embeddings
+            max_seq_length = self.transformer.config.max_position_embeddings
+
+        # limit length of text to improve tokenization speed
+        max_text_length = int(max_seq_length * self.avg_token_length)
+        texts = [text[:max_text_length] for text in texts]
 
         embeddings_list = []
         for start in progress:
@@ -222,14 +242,13 @@ class SpladeEncoder(torch.nn.Module):
                 add_special_tokens=True,
                 padding="longest",
                 truncation="longest_first",
-                max_length=max_text_length,
+                max_length=max_seq_length,
                 return_attention_mask=True,
                 return_tensors="pt",
             ).to(self.device)
 
             with torch.inference_mode():
                 embeddings_ = self.forward(input_ids=tokens["input_ids"], attention_mask=tokens["attention_mask"]).cpu()
-
                 if convert_to_numpy:
                     embeddings_list.append(embeddings_.numpy())
                 elif convert_to_csr_matrix:
