@@ -197,9 +197,7 @@ class SpladeEncoder(torch.nn.Module):
         texts: list[str],
         batch_size: int = 32,
         max_seq_length: int | None = None,
-        convert_to_tensor: bool = True,
-        convert_to_numpy: bool = False,
-        convert_to_csr_matrix: bool = False,
+        return_type: str = "tensor",
         show_progress_bar: bool = False,
     ) -> torch.Tensor | np.ndarray | sps.csr_matrix:
         """Encode a list of texts into embeddings (dense vectors)
@@ -209,20 +207,18 @@ class SpladeEncoder(torch.nn.Module):
             batch_size (int): Batch size for encoding.
             max_seq_length (int | None): Maximum token length for truncation.
                 If None, use model's max position embeddings.
-            convert_to_tensor (bool): Whether to return a PyTorch tensor. Default is True.
-            convert_to_numpy (bool): Whether to return a NumPy array. Default is False.
-            convert_to_csr_matrix (bool): Whether to return a scipy csr_matrix. Default is False.
+            return_type (str): The return type of the encoded representations. Must be one of "tensor", "numpy", or
+                "csr_matrix".
+                - "tensor": Returns a PyTorch tensor.
+                - "numpy": Returns a NumPy array.
+                - "csr_matrix": Returns a scipy csr_matrix.
             show_progress_bar (bool): Whether to show a progress bar during encoding.
 
         Returns:
             A tensor of shape (b, V) containing the encoded representations.
         """
-        if convert_to_numpy and convert_to_tensor and convert_to_csr_matrix:
-            raise ValueError("Only one of (convert_to_numpy, convert_to_tensor, convert_to_csr_matrix) can be True.")
-        if not (convert_to_numpy or convert_to_tensor or convert_to_csr_matrix):
-            raise ValueError(
-                "At least one of (convert_to_numpy, convert_to_tensor, convert_to_csr_matrix) must be True."
-            )
+        if return_type not in {"tensor", "numpy", "csr_matrix"}:
+            raise ValueError('`return_type` must be one of "tensor", "numpy", or "csr_matrix".')
 
         progress = tqdm(range(0, len(texts), batch_size), disable=not show_progress_bar)
         if max_seq_length is None:
@@ -249,9 +245,9 @@ class SpladeEncoder(torch.nn.Module):
 
             with torch.inference_mode():
                 embeddings_ = self.forward(input_ids=tokens["input_ids"], attention_mask=tokens["attention_mask"]).cpu()
-                if convert_to_numpy:
+                if return_type == "numpy":
                     embeddings_list.append(embeddings_.numpy())
-                elif convert_to_csr_matrix:
+                elif return_type == "csr_matrix":
                     nz_indices = embeddings_.nonzero()
                     rows = nz_indices[:, 0].tolist()
                     cols = nz_indices[:, 1].tolist()
@@ -260,9 +256,9 @@ class SpladeEncoder(torch.nn.Module):
                 else:
                     embeddings_list.append(embeddings_)
 
-        if convert_to_numpy:
+        if return_type == "numpy":
             return np.vstack(embeddings_list) if len(embeddings_list) > 0 else np.empty((0, len(self.idx2token)))
-        elif convert_to_csr_matrix:
+        elif return_type == "csr_matrix":
             return sps.vstack(embeddings_list)
 
         return torch.vstack(embeddings_list) if len(embeddings_list) > 0 else torch.empty((0, len(self.idx2token)))

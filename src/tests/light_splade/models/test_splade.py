@@ -260,7 +260,7 @@ class TestSpladeEncoder:
         encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0, 3.0]]))
 
         texts = ["hello world"]
-        result = encoder.encode(texts, batch_size=2, convert_to_tensor=True, show_progress_bar=False)
+        result = encoder.encode(texts, batch_size=2, return_type="tensor", show_progress_bar=False)
 
         assert isinstance(result, torch.Tensor)
         assert result.shape == (1, 3)
@@ -271,7 +271,7 @@ class TestSpladeEncoder:
     def test_encode_numpy_output(
         self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
     ) -> None:
-        """Test encode with convert_to_numpy=True."""
+        """Test encode with return_type="numpy"."""
         mock_model, mock_tokenizer = mock_model_and_tokenizer
         mock_auto_model.from_pretrained.return_value = mock_model
         mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
@@ -285,7 +285,7 @@ class TestSpladeEncoder:
         encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0]]))
 
         texts = ["hello"]
-        result = encoder.encode(texts, convert_to_numpy=True, convert_to_tensor=False, show_progress_bar=False)
+        result = encoder.encode(texts, return_type="numpy", show_progress_bar=False)
 
         assert isinstance(result, np.ndarray)
         assert result.shape == (1, 2)
@@ -295,7 +295,7 @@ class TestSpladeEncoder:
     def test_encode_csr_matrix_output(
         self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
     ) -> None:
-        """Test encode with convert_to_csr_matrix=True."""
+        """Test encode with return_type="csr_matrix"."""
         mock_model, mock_tokenizer = mock_model_and_tokenizer
         mock_auto_model.from_pretrained.return_value = mock_model
         mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
@@ -309,7 +309,7 @@ class TestSpladeEncoder:
         encoder.forward = Mock(return_value=torch.tensor([[0.0, 2.0, 0.0, 1.5]]))
 
         texts = ["hello"]
-        result = encoder.encode(texts, convert_to_csr_matrix=True, convert_to_tensor=False, show_progress_bar=False)
+        result = encoder.encode(texts, return_type="csr_matrix", show_progress_bar=False)
 
         assert isinstance(result, csr_matrix)
         assert result.shape == (1, 4)
@@ -421,7 +421,7 @@ class TestSpladeEncoder:
 
     @patch("light_splade.models.splade.AutoModelForMaskedLM")
     @patch("light_splade.models.splade.AutoTokenizer")
-    def test_encode_invalid_conversion_flags(
+    def test_encode_invalid_return_type(
         self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
     ) -> None:
         """Test that encode raises error when multiple conversion flags are True."""
@@ -431,23 +431,8 @@ class TestSpladeEncoder:
 
         encoder = SpladeEncoder("test-model-path")
 
-        with pytest.raises(ValueError, match="Only one of"):
-            encoder.encode(["hello"], convert_to_tensor=True, convert_to_numpy=True, convert_to_csr_matrix=True)
-
-    @patch("light_splade.models.splade.AutoModelForMaskedLM")
-    @patch("light_splade.models.splade.AutoTokenizer")
-    def test_encode_no_conversion_flag(
-        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
-    ) -> None:
-        """Test that encode raises error when all conversion flags are False."""
-        mock_model, mock_tokenizer = mock_model_and_tokenizer
-        mock_auto_model.from_pretrained.return_value = mock_model
-        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
-
-        encoder = SpladeEncoder("test-model-path")
-
-        with pytest.raises(ValueError, match="At least one of"):
-            encoder.encode(["hello"], convert_to_tensor=False, convert_to_numpy=False, convert_to_csr_matrix=False)
+        with pytest.raises(ValueError, match="must be one of"):
+            encoder.encode(["hello"], return_type="tensor1")
 
     @patch("light_splade.models.splade.AutoModelForMaskedLM")
     @patch("light_splade.models.splade.AutoTokenizer")
