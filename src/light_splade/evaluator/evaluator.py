@@ -126,8 +126,7 @@ class Evaluator:
                     batch_texts,
                     batch_size=self.batch_size,
                     max_text_length=self.data_collator.max_length,
-                    convert_to_tensor=False,
-                    convert_to_csr_matrix=True,
+                    return_type="csr_matrix",
                 )  # type: ignore
                 indexer.index_docs(batch_doc_ids, csr_embeddings, use_cache=True)
 
@@ -175,11 +174,7 @@ class Evaluator:
                 qrels[str(qid)] = [str(doc_id) for doc_id in gt_doc_ids]
 
                 # vectorize the query and retrieve the top-K where K as the max from metrics
-                query_embeddings: sps.csr_matrix = self.model.q_encoder.encode(
-                    [q_text],
-                    convert_to_tensor=False,
-                    convert_to_csr_matrix=True,
-                )  # type: ignore
+                query_embeddings: sps.csr_matrix = self.model.q_encoder.encode([q_text], return_type="csr_matrix")  # type: ignore
                 ranked_cand_ids = retriever.retrieve(
                     query_embeddings, target_doc_ids, top_k=max_k, threshold=score_threshold
                 )[0]
