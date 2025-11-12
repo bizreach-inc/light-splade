@@ -249,9 +249,13 @@ class SpladeEncoder(torch.nn.Module):
                     embeddings_list.append(embeddings_.numpy())
                 elif return_type == "csr_matrix":
                     nz_indices = embeddings_.nonzero()
-                    rows = nz_indices[:, 0].tolist()
-                    cols = nz_indices[:, 1].tolist()
-                    weights = embeddings_[rows, cols].tolist()
+                    rows = nz_indices[:, 0]
+                    cols = nz_indices[:, 1]
+                    weights = embeddings_[rows, cols]
+                    if weights.dtype != torch.float32:
+                        # csr_matrix does not support float16.
+                        # In case the model weights are in float16, convert to float32
+                        weights = weights.type(torch.float32)
                     embeddings_list.append(sps.csr_matrix((weights, (rows, cols)), shape=embeddings_.shape))
                 else:
                     embeddings_list.append(embeddings_)
