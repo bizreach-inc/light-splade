@@ -17,8 +17,10 @@ from typing import Callable
 from unittest.mock import Mock
 from unittest.mock import patch
 
+import numpy as np
 import pytest
 import torch
+from scipy.sparse import csr_matrix
 from transformers.models.bert import BertTokenizer
 from transformers.models.bert import BertTokenizerFast
 
@@ -79,6 +81,11 @@ class TestSpladeEncoder:
             "[PAD]": 0,
             "[CLS]": 3,
         }
+        mock_model.config.max_position_embeddings = 512
+        mock_auto_tokenizer = Mock()
+        mock_auto_model = Mock()
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
         return mock_model, mock_tokenizer
 
     @pytest.mark.parametrize(
@@ -208,10 +215,10 @@ class TestSpladeEncoder:
 
     @patch("light_splade.models.splade.AutoModelForMaskedLM")
     @patch("light_splade.models.splade.AutoTokenizer")
-    def test_get_sparse(self, mock_auto_tokenizer: Mock, mock_auto_model: Mock) -> None:
-        mock_model = Mock()
-        mock_tokenizer = Mock()
-        mock_tokenizer.get_vocab.return_value = {"hello": 1, "world": 2}
+    def test_get_sparse(
+        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
+    ) -> None:
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
         mock_auto_model.from_pretrained.return_value = mock_model
         mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
 
@@ -229,6 +236,244 @@ class TestSpladeEncoder:
         assert len(result) == 2
         assert result[0] == {"hello": 2.0}
         assert result[1] == {"world": 1.5}
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_basic_tensor_output(
+        self,
+        mock_auto_tokenizer: Mock,
+        mock_auto_model: Mock,
+        mock_model_and_tokenizer: tuple[Mock, Mock],
+    ) -> None:
+        """Test basic encode functionality returning a tensor."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        # Mock tokenizer call
+        mock_token_output = Mock()
+        mock_token_output.__getitem__ = Mock(side_effect=lambda key: torch.tensor([[1, 2]]))
+        mock_token_output.to = Mock(return_value=mock_token_output)
+        mock_tokenizer.return_value = mock_token_output
+
+        encoder = SpladeEncoder("test-model-path", device="cpu")
+        encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0, 3.0]]))
+
+        texts = ["hello world"]
+        result = encoder.encode(texts, batch_size=2, return_type="tensor", show_progress_bar=False)
+
+        assert isinstance(result, torch.Tensor)
+        assert result.shape == (1, 3)
+        encoder.forward.assert_called_once()
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_numpy_output(
+        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
+    ) -> None:
+        """Test encode with return_type="numpy"."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        mock_token_output = Mock()
+        mock_token_output.__getitem__ = Mock(side_effect=lambda key: torch.tensor([[1, 2]]))
+        mock_token_output.to = Mock(return_value=mock_token_output)
+        mock_tokenizer.return_value = mock_token_output
+
+        encoder = SpladeEncoder("test-model-path", device="cpu")
+        encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0]]))
+
+        texts = ["hello"]
+        result = encoder.encode(texts, return_type="numpy", show_progress_bar=False)
+
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (1, 2)
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_csr_matrix_output(
+        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
+    ) -> None:
+        """Test encode with return_type="csr_matrix"."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        mock_token_output = Mock()
+        mock_token_output.__getitem__ = Mock(side_effect=lambda key: torch.tensor([[1, 2]]))
+        mock_token_output.to = Mock(return_value=mock_token_output)
+        mock_tokenizer.return_value = mock_token_output
+
+        encoder = SpladeEncoder("test-model-path", device="cpu")
+        encoder.forward = Mock(return_value=torch.tensor([[0.0, 2.0, 0.0, 1.5]]))
+
+        texts = ["hello"]
+        result = encoder.encode(texts, return_type="csr_matrix", show_progress_bar=False)
+
+        assert isinstance(result, csr_matrix)
+        assert result.shape == (1, 4)
+        assert result.nnz == 2  # Only 2 non-zero values
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_with_batching(
+        self,
+        mock_auto_tokenizer: Mock,
+        mock_auto_model: Mock,
+        mock_model_and_tokenizer: tuple[Mock, Mock],
+    ) -> None:
+        """Test encode processes multiple batches correctly."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        token_out1 = Mock()
+        token_out1.__getitem__ = Mock(side_effect=lambda key: torch.tensor([[1, 2]]))
+        token_out1.to = Mock(return_value=token_out1)
+
+        token_out2 = Mock()
+        token_out2.__getitem__ = Mock(side_effect=lambda key: torch.tensor([[2, 1]]))
+        token_out2.to = Mock(return_value=token_out2)
+
+        mock_tokenizer.side_effect = [token_out1, token_out2]
+
+        encoder = SpladeEncoder("test-model-path", device="cpu")
+
+        emb1 = torch.tensor([[1.0, 2.0]])
+        emb2 = torch.tensor([[0.5, 1.5]])
+        encoder.forward = Mock(side_effect=[emb1, emb2])
+
+        texts = ["text1", "text2"]
+        result = encoder.encode(texts, batch_size=1, show_progress_bar=False)
+
+        assert mock_tokenizer.call_count == 2
+        assert encoder.forward.call_count == 2
+        assert result.shape == (2, 2)
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_max_seq_length(
+        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
+    ) -> None:
+        """Test that max_seq_length is passed to tokenizer."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        mock_token_output = Mock()
+        mock_token_output.__getitem__ = Mock(side_effect=lambda key: torch.tensor([[1, 2]]))
+        mock_token_output.to = Mock(return_value=mock_token_output)
+        mock_tokenizer.return_value = mock_token_output
+
+        encoder = SpladeEncoder("test-model-path", device="cpu")
+        encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0]]))
+
+        texts = ["hello world"]
+        encoder.encode(texts, max_seq_length=128, show_progress_bar=False)
+
+        # Verify tokenizer was called with max_length=128
+        call_kwargs = mock_tokenizer.call_args[1]
+        assert call_kwargs["max_length"] == 128
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_device_handling(
+        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
+    ) -> None:
+        """Test that tokenizer output is moved to the correct device."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        mock_token_output = Mock()
+        mock_token_output.__getitem__ = Mock(side_effect=lambda key: torch.tensor([[1, 2]]))
+        mock_token_output.to = Mock(return_value=mock_token_output)
+        mock_tokenizer.return_value = mock_token_output
+
+        encoder = SpladeEncoder("test-model-path", device="cuda")
+        encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0]]))
+
+        texts = ["hello"]
+        encoder.encode(texts, show_progress_bar=False)
+
+        mock_token_output.to.assert_called_once_with("cuda")
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_inference_mode(
+        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
+    ) -> None:
+        """Test that encode uses torch.inference_mode context."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        mock_token_output = Mock()
+        mock_token_output.__getitem__ = Mock(side_effect=lambda key: torch.tensor([[1, 2]]))
+        mock_token_output.to = Mock(return_value=mock_token_output)
+        mock_tokenizer.return_value = mock_token_output
+
+        encoder = SpladeEncoder("test-model-path")
+        encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0]]))
+
+        encoder.encode(["hello"], show_progress_bar=False)
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_invalid_return_type(
+        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
+    ) -> None:
+        """Test that encode raises error when multiple conversion flags are True."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        encoder = SpladeEncoder("test-model-path")
+
+        with pytest.raises(ValueError, match="must be one of"):
+            encoder.encode(["hello"], return_type="tensor1")
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_progress_bar_enabled(
+        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
+    ) -> None:
+        """Test encode with progress bar enabled."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        mock_token_output = Mock()
+        mock_token_output.__getitem__ = Mock(side_effect=lambda key: torch.tensor([[1, 2]]))
+        mock_token_output.to = Mock(return_value=mock_token_output)
+        mock_tokenizer.return_value = mock_token_output
+
+        encoder = SpladeEncoder("test-model-path")
+        encoder.forward = Mock(return_value=torch.tensor([[1.0, 2.0]]))
+
+        texts = ["hello"]
+        encoder.encode(texts, show_progress_bar=True)
+
+    @patch("light_splade.models.splade.AutoModelForMaskedLM")
+    @patch("light_splade.models.splade.AutoTokenizer")
+    def test_encode_empty_texts(
+        self, mock_auto_tokenizer: Mock, mock_auto_model: Mock, mock_model_and_tokenizer: tuple[Mock, Mock]
+    ) -> None:
+        """Test encode with empty text list."""
+        mock_model, mock_tokenizer = mock_model_and_tokenizer
+        mock_tokenizer.get_vocab.return_value = {"hello": 1}
+        mock_auto_model.from_pretrained.return_value = mock_model
+        mock_auto_tokenizer.from_pretrained.return_value = mock_tokenizer
+
+        encoder = SpladeEncoder("test-model-path")
+
+        texts: list[str] = []
+        result = encoder.encode(texts, show_progress_bar=False)
+
+        assert isinstance(result, torch.Tensor)
+        assert result.shape[0] == 0
+        mock_tokenizer.assert_not_called()
 
 
 class TestSplade:

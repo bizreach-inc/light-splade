@@ -21,10 +21,10 @@ similarities between query and document sparse vectors and returns ranked docume
 from typing import Any
 
 import numpy as np
+from scipy import sparse as sps
 
 from light_splade.schemas.types import ID_LIST
 from light_splade.schemas.types import ID_WITH_SCORE_LIST
-from light_splade.schemas.types import SPARSE_VECTOR_LIST
 
 from .sparse_indexer import SparseIndexer
 
@@ -42,7 +42,7 @@ class SparseRetriever:
 
     def retrieve(
         self,
-        query_vectors: SPARSE_VECTOR_LIST,
+        query_sparse_embeddings: sps.csr_matrix,
         target_doc_ids: ID_LIST | None = None,
         top_k: int = 0,
         threshold: float = 0.0,
@@ -51,8 +51,9 @@ class SparseRetriever:
         """Retrieve relevant doc ids for each query vector.
 
         Args:
-            query_vectors (SPARSE_VECTOR_LIST): List of sparse query vectors (each a mapping term->score). If multiple
-                vectors are provided, ``target_doc_ids`` must be None (search across all documents).
+            query_sparse_embeddings (sps.csr_matrix): Sparse query vectors in csr_matrix format.
+                If multiple vectors (multi rows) are provided, ``target_doc_ids`` must be None (search across all
+                documents).
             target_doc_ids (ID_LIST | None): Optional list of target doc ids to restrict search to (supported only when
                 a single query vector is provided).
             top_k (int): Number of ids to return per query (0 to return all).
@@ -65,19 +66,16 @@ class SparseRetriever:
         """
 
         # Validation
-        assert len(query_vectors) == 1 or target_doc_ids is None, (
+        assert query_sparse_embeddings.shape[0] == 1 or target_doc_ids is None, (
             "Multiple query vectors are supported only when searching on all "
             "documents, i.e., target_doc_ids must be None"
         )
 
-        # encode query sparse vectors into csr_matrix
-        query_sparse_matrix = self.sparse_indexer.index_vectors(query_vectors)
-
         # Get doc sparse matrix in form of csr_matrix
-        doc_sparse_matrix = self.sparse_indexer.get_sparse_matrix(target_doc_ids)
+        doc_sparse_embeddings = self.sparse_indexer.get_sparse_matrix(target_doc_ids)
 
         # Compute similarity scores
-        scores = query_sparse_matrix.dot(doc_sparse_matrix.T).toarray()
+        scores = query_sparse_embeddings.dot(doc_sparse_embeddings.T).toarray()
 
         # rank the list up to top_k
         if top_k == 0:

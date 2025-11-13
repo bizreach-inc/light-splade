@@ -29,12 +29,14 @@ class TestSparseIndexer:
         return ["hello", "world", "test", "##sub"]
 
     @pytest.fixture
-    def sample_sparse_vectors(self) -> list[dict[str, float]]:
-        return [
-            {"hello": 0.5, "world": 0.3},
-            {"test": 0.8, "hello": 0.2},
-            {"world": 0.6, "##sub": 0.4},
-        ]
+    def sample_sparse_vectors(self) -> sps.csr_matrix:
+        return sps.csr_matrix(
+            [
+                [0.5, 0.3, 0.0, 0.0],
+                [0.2, 0.0, 0.8, 0.0],
+                [0.0, 0.6, 0.0, 0.4],
+            ]
+        )
 
     def test___init___basic(self, sample_vocab: list[str]) -> None:
         indexer = SparseIndexer(vocab=sample_vocab)
@@ -76,33 +78,10 @@ class TestSparseIndexer:
         expected_term2index = {term: idx for idx, term in enumerate(sample_vocab)}
         assert indexer.term2index == expected_term2index
 
-    def test_index_vectors_sparse(
-        self,
-        sample_vocab: list[str],
-        sample_sparse_vectors: list[dict[str, float]],
-    ) -> None:
-        indexer = SparseIndexer(vocab=sample_vocab)
-
-        result = indexer.index_vectors(sample_sparse_vectors)
-
-        assert isinstance(result, sps.csr_matrix)
-        assert result.shape == (len(sample_sparse_vectors), len(sample_vocab))
-        assert result.dtype == indexer.dtype
-
-    def test_index_vectors_dense(self, sample_vocab: list[str]) -> None:
-        indexer = SparseIndexer(vocab=sample_vocab)
-        dense_vectors = np.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]])
-
-        result = indexer.index_vectors(dense_vectors)
-
-        assert isinstance(result, sps.csr_matrix)
-        assert result.shape == dense_vectors.shape
-        assert np.allclose(result.toarray(), dense_vectors)
-
     def test_index_docs_no_cache(
         self,
         sample_vocab: list[str],
-        sample_sparse_vectors: list[dict[str, float]],
+        sample_sparse_vectors: sps.csr_matrix,
     ) -> None:
         indexer = SparseIndexer(vocab=sample_vocab)
         doc_ids = ["101", "102", "103"]
@@ -117,7 +96,7 @@ class TestSparseIndexer:
     def test_index_docs_with_cache(
         self,
         sample_vocab: list[str],
-        sample_sparse_vectors: list[dict[str, float]],
+        sample_sparse_vectors: sps.csr_matrix,
     ) -> None:
         indexer = SparseIndexer(vocab=sample_vocab, max_cache_size=10)
         doc_ids = ["101", "102", "103"]
@@ -133,11 +112,11 @@ class TestSparseIndexer:
         indexer = SparseIndexer(vocab=sample_vocab, max_cache_size=1)
 
         # First batch - should go to cache
-        indexer.index_docs(["101"], [{"hello": 0.5}], use_cache=True)
+        indexer.index_docs(["101"], sps.csr_matrix([[0.5, 0.0, 0.0, 0.0]]), use_cache=True)
         assert len(indexer.cache_doc_ids) == 1
 
         # Second batch - should trigger merge due to cache size limit
-        indexer.index_docs(["102"], [{"world": 0.3}], use_cache=True)
+        indexer.index_docs(["102"], sps.csr_matrix([[0.0, 0.3, 0.0, 0.0]]), use_cache=True)
         assert len(indexer.doc_id_list) == 2  # Should be merged
         assert indexer.is_cache_empty() or len(indexer.cache_doc_ids) == 1
 
@@ -145,7 +124,7 @@ class TestSparseIndexer:
         indexer = SparseIndexer(vocab=sample_vocab)
 
         # Add something to cache
-        indexer.index_docs(["101"], [{"hello": 0.5}], use_cache=True)
+        indexer.index_docs(["101"], sps.csr_matrix([[0.5, 0.0, 0.0, 0.0]]), use_cache=True)
         assert not indexer.is_cache_empty()
 
         indexer.finalize_indexing()
@@ -158,7 +137,7 @@ class TestSparseIndexer:
 
         assert indexer.is_cache_empty()
 
-        indexer.index_docs(["101"], [{"hello": 0.5}], use_cache=True)
+        indexer.index_docs(["101"], sps.csr_matrix([[0.5, 0.0, 0.0, 0.0]]), use_cache=True)
         assert not indexer.is_cache_empty()
 
     @pytest.mark.parametrize(
@@ -172,7 +151,7 @@ class TestSparseIndexer:
     def test_get_sparse_matrix(
         self,
         sample_vocab: list[str],
-        sample_sparse_vectors: list[dict[str, float]],
+        sample_sparse_vectors: sps.csr_matrix,
         doc_ids: Any,
         expected_indices: Any,
     ) -> None:
@@ -183,29 +162,14 @@ class TestSparseIndexer:
 
         assert isinstance(result, sps.csr_matrix)
         if doc_ids is None:
-            assert result.shape[0] == len(sample_sparse_vectors)
+            assert result.shape[0] == sample_sparse_vectors.shape[0]
         else:
             assert result.shape[0] == len(doc_ids)
-
-    def test_get_sparse_vectors(
-        self,
-        sample_vocab: list[str],
-        sample_sparse_vectors: list[dict[str, float]],
-    ) -> None:
-        indexer = SparseIndexer(vocab=sample_vocab)
-        doc_ids = ["101", "102", "103"]
-        indexer.index_docs(doc_ids, sample_sparse_vectors, use_cache=False)
-
-        result = indexer.get_sparse_vectors(["101", "102"])
-
-        assert len(result) == 2
-        assert isinstance(result[0], dict)
-        assert isinstance(result[1], dict)
 
     def test___len__(
         self,
         sample_vocab: list[str],
-        sample_sparse_vectors: list[dict[str, float]],
+        sample_sparse_vectors: sps.csr_matrix,
     ) -> None:
         indexer = SparseIndexer(vocab=sample_vocab)
 
@@ -216,10 +180,7 @@ class TestSparseIndexer:
 
     def test_stats(self, sample_vocab: list[str]) -> None:
         indexer = SparseIndexer(vocab=sample_vocab)
-        sparse_vectors = [
-            {"hello": 0.5, "world": 0.3},
-            {"hello": 0.2, "##sub": 0.4},
-        ]
+        sparse_vectors = sps.csr_matrix([[0.5, 0.3, 0.0, 0.0], [0.2, 0.0, 0.0, 0.4]])
         indexer.index_docs(["101", "102"], sparse_vectors, use_cache=False)
 
         stats = indexer.stats()

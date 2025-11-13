@@ -42,7 +42,9 @@ References:
 import os
 from logging import getLogger
 
+import numpy as np
 import torch
+from scipy import sparse as sps
 from tqdm import tqdm
 from transformers import AutoModelForMaskedLM
 from transformers import AutoTokenizer
@@ -68,6 +70,20 @@ def is_same_tokenizers(tokenizer1: PreTrainedTokenizer, tokenizer2: PreTrainedTo
         True if both tokenizers share the same class and vocabulary mapping.
     """
     return isinstance(tokenizer1, type(tokenizer2)) and tokenizer1.vocab == tokenizer2.vocab
+
+
+def get_avg_token_length(tokenizer: PreTrainedTokenizer) -> float:
+    """Compute average token lengths for each token in the tokenizer's vocabulary.
+
+    Args:
+        tokenizer (PreTrainedTokenizer): The tokenizer instance.
+
+    Returns:
+        Average token length as a float.
+    """
+    token_lens = [len(t) for t in tokenizer.get_vocab().keys()]
+    avg_token_length = sum(token_lens) / len(token_lens) if token_lens else 0
+    return avg_token_length
 
 
 class SpladeEncoder(torch.nn.Module):
@@ -97,7 +113,10 @@ class SpladeEncoder(torch.nn.Module):
     def from_pretrained(self, model_path: str) -> None:
         """Load transformer model and tokenizer from ``model_path``."""
         self.transformer = AutoModelForMaskedLM.from_pretrained(model_path, trust_remote_code=True)
+        self.transformer.to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+
+        self.avg_token_length = get_avg_token_length(self.tokenizer)
 
         # build mapping from index to token text
         self.idx2token = {idx: token for token, idx in self.tokenizer.get_vocab().items()}
@@ -177,26 +196,38 @@ class SpladeEncoder(torch.nn.Module):
         self,
         texts: list[str],
         batch_size: int = 32,
-        max_text_length: int | None = None,
+        max_seq_length: int | None = None,
+        return_type: str = "tensor",
         show_progress_bar: bool = False,
-    ) -> torch.Tensor:
+    ) -> torch.Tensor | np.ndarray | sps.csr_matrix:
         """Encode a list of texts into embeddings (dense vectors)
 
         Args:
             texts (list[str]): List of texts to encode.
             batch_size (int): Batch size for encoding.
-            max_text_length (int | None): Maximum token length for truncation.
+            max_seq_length (int | None): Maximum token length for truncation.
                 If None, use model's max position embeddings.
+            return_type (str): The return type of the encoded representations. Must be one of "tensor", "numpy", or
+                "csr_matrix".
+                - "tensor": Returns a PyTorch tensor.
+                - "numpy": Returns a NumPy array.
+                - "csr_matrix": Returns a scipy csr_matrix.
             show_progress_bar (bool): Whether to show a progress bar during encoding.
 
         Returns:
             A tensor of shape (b, V) containing the encoded representations.
         """
+        if return_type not in {"tensor", "numpy", "csr_matrix"}:
+            raise ValueError('`return_type` must be one of "tensor", "numpy", or "csr_matrix".')
 
         progress = tqdm(range(0, len(texts), batch_size), disable=not show_progress_bar)
-        if max_text_length is None:
+        if max_seq_length is None:
             # FIXME: avoid accessing BERT-specific config here
-            max_text_length = self.transformer.config.max_position_embeddings
+            max_seq_length = self.transformer.config.max_position_embeddings
+
+        # limit length of text to improve tokenization speed
+        max_text_length = int(max_seq_length * self.avg_token_length)
+        texts = [text[:max_text_length] for text in texts]
 
         embeddings_list = []
         for start in progress:
@@ -207,17 +238,34 @@ class SpladeEncoder(torch.nn.Module):
                 add_special_tokens=True,
                 padding="longest",
                 truncation="longest_first",
-                max_length=max_text_length,
+                max_length=max_seq_length,
                 return_attention_mask=True,
                 return_tensors="pt",
             ).to(self.device)
 
             with torch.inference_mode():
                 embeddings_ = self.forward(input_ids=tokens["input_ids"], attention_mask=tokens["attention_mask"]).cpu()
-                embeddings_list.append(embeddings_)
+                if return_type == "numpy":
+                    embeddings_list.append(embeddings_.numpy())
+                elif return_type == "csr_matrix":
+                    nz_indices = embeddings_.nonzero()
+                    rows = nz_indices[:, 0]
+                    cols = nz_indices[:, 1]
+                    weights = embeddings_[rows, cols]
+                    if weights.dtype != torch.float32:
+                        # csr_matrix does not support float16.
+                        # In case the model weights are in float16, convert to float32
+                        weights = weights.type(torch.float32)
+                    embeddings_list.append(sps.csr_matrix((weights, (rows, cols)), shape=embeddings_.shape))
+                else:
+                    embeddings_list.append(embeddings_)
 
-        embeddings = torch.vstack(embeddings_list)
-        return embeddings
+        if return_type == "numpy":
+            return np.vstack(embeddings_list) if len(embeddings_list) > 0 else np.empty((0, len(self.idx2token)))
+        elif return_type == "csr_matrix":
+            return sps.vstack(embeddings_list)
+
+        return torch.vstack(embeddings_list) if len(embeddings_list) > 0 else torch.empty((0, len(self.idx2token)))
 
 
 class Splade(torch.nn.Module):

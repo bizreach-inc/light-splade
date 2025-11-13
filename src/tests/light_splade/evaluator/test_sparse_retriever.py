@@ -28,7 +28,7 @@ class TestSparseRetriever:
         indexer.doc_id_list = ["101", "102", "103", "104"]
 
         # Mock index_vectors to return a simple csr_matrix
-        indexer.index_vectors.return_value = sps.csr_matrix([[0.5, 0.3, 0.0, 0.2]])
+        # indexer.index_vectors.return_value = sps.csr_matrix([[0.5, 0.3, 0.0, 0.2]])
 
         # Mock get_sparse_matrix to return document sparse matrix
         doc_sparse_matrix = sps.csr_matrix(
@@ -50,9 +50,8 @@ class TestSparseRetriever:
 
     def test_retrieve_basic(self, mock_sparse_indexer: Mock) -> None:
         retriever = SparseRetriever(mock_sparse_indexer)
-        query_vectors = [{"token1": 0.5, "token2": 0.3}]
-
-        result = retriever.retrieve(query_vectors, top_k=2)
+        query_sparse_embeddings = sps.csr_matrix([[0.5, 0.3, 0.0, 0.2]])
+        result = retriever.retrieve(query_sparse_embeddings, top_k=2)
 
         assert len(result) == 1  # One query
         assert len(result[0]) <= 2  # Top-2 results
@@ -60,7 +59,7 @@ class TestSparseRetriever:
 
     def test_retrieve_with_target_doc_ids(self, mock_sparse_indexer: Mock) -> None:
         retriever = SparseRetriever(mock_sparse_indexer)
-        query_vectors = [{"token1": 0.5, "token2": 0.3}]
+        query_sparse_embeddings = sps.csr_matrix([[0.5, 0.3, 0.0, 0.2]])
         target_doc_ids = ["101", "103"]
 
         # Mock get_sparse_matrix for specific doc_ids
@@ -69,7 +68,7 @@ class TestSparseRetriever:
         )
         mock_sparse_indexer.get_sparse_matrix.return_value = target_sparse_matrix
 
-        result = retriever.retrieve(query_vectors, target_doc_ids=target_doc_ids, top_k=2)
+        result = retriever.retrieve(query_sparse_embeddings, target_doc_ids=target_doc_ids, top_k=2)
 
         assert len(result) == 1
         assert all(doc_id in target_doc_ids for doc_id in result[0])
@@ -85,19 +84,18 @@ class TestSparseRetriever:
     )
     def test_retrieve_top_k(self, mock_sparse_indexer: Mock, top_k: int, expected_max_results: int) -> None:
         retriever = SparseRetriever(mock_sparse_indexer)
-        query_vectors = [{"token1": 0.5, "token2": 0.3}]
-
-        result = retriever.retrieve(query_vectors, top_k=top_k)
+        query_sparse_embeddings = sps.csr_matrix([[0.5, 0.3, 0.0, 0.2]])
+        result = retriever.retrieve(query_sparse_embeddings, top_k=top_k)
 
         assert len(result) == 1
         assert len(result[0]) <= expected_max_results
 
     def test_retrieve_with_threshold(self, mock_sparse_indexer: Mock) -> None:
         retriever = SparseRetriever(mock_sparse_indexer)
-        query_vectors = [{"token1": 0.5, "token2": 0.3}]
+        query_sparse_embeddings = sps.csr_matrix([[0.5, 0.3, 0.0, 0.2]])
         threshold = 0.5  # High threshold
 
-        result = retriever.retrieve(query_vectors, threshold=threshold, top_k=0)
+        result = retriever.retrieve(query_sparse_embeddings, threshold=threshold, top_k=0)
 
         assert len(result) == 1
         # Results should be filtered by threshold
@@ -105,9 +103,9 @@ class TestSparseRetriever:
 
     def test_retrieve_with_scores(self, mock_sparse_indexer: Mock) -> None:
         retriever = SparseRetriever(mock_sparse_indexer)
-        query_vectors = [{"token1": 0.5, "token2": 0.3}]
+        query_sparse_embeddings = sps.csr_matrix([[0.5, 0.3, 0.0, 0.2]])
 
-        result = retriever.retrieve(query_vectors, return_score=True, top_k=2)
+        result = retriever.retrieve(query_sparse_embeddings, return_score=True, top_k=2)
 
         assert len(result) == 1
         assert len(result[0]) <= 2
@@ -121,15 +119,12 @@ class TestSparseRetriever:
 
     def test_retrieve_multiple_queries_error(self, mock_sparse_indexer: Mock) -> None:
         retriever = SparseRetriever(mock_sparse_indexer)
-        query_vectors = [
-            {"token1": 0.5, "token2": 0.3},
-            {"token1": 0.2, "token2": 0.8},
-        ]
+        # multiple query vectors
+        query_sparse_embeddings = sps.csr_matrix([[0.5, 0.3, 0.0, 0.2], [0.5, 0.3, 0.0, 0.2]])
         target_doc_ids = ["101", "102"]  # Should cause error with multiple
-        # queries
 
         with pytest.raises(AssertionError) as exc_info:
-            retriever.retrieve(query_vectors, target_doc_ids=target_doc_ids)
+            retriever.retrieve(query_sparse_embeddings, target_doc_ids=target_doc_ids)
 
         assert "Multiple query vectors" in str(exc_info.value)
 
@@ -141,12 +136,9 @@ class TestSparseRetriever:
             [[0.5, 0.3, 0.0, 0.2], [0.2, 0.8, 0.1, 0.0]]  # query 1  # query 2
         )
 
-        query_vectors = [
-            {"token1": 0.5, "token2": 0.3},
-            {"token1": 0.2, "token2": 0.8},
-        ]
+        query_sparse_embeddings = sps.csr_matrix([[0.5, 0.3, 0.0, 0.2], [0.5, 0.3, 0.0, 0.2]])
 
-        result = retriever.retrieve(query_vectors, top_k=2)
+        result = retriever.retrieve(query_sparse_embeddings, top_k=2)
 
         assert len(result) == 2  # Two queries
         assert len(result[0]) <= 2  # Top-2 for first query
@@ -154,25 +146,22 @@ class TestSparseRetriever:
 
     def test_retrieve_no_results_above_threshold(self, mock_sparse_indexer: Mock) -> None:
         retriever = SparseRetriever(mock_sparse_indexer)
-        query_vectors = [{"token1": 0.1, "token2": 0.1}]  # Low scores
+
+        # Low similarity scores
+        query_sparse_embeddings = sps.csr_matrix([[0.1, 0.1, 0.0, 0.0]])  # Low scores
         threshold = 0.9  # Very high threshold
 
-        # Mock low similarity scores
-        mock_sparse_indexer.index_vectors.return_value = sps.csr_matrix([[0.1, 0.1, 0.0, 0.0]])
-
-        result = retriever.retrieve(query_vectors, threshold=threshold, top_k=0)
+        result = retriever.retrieve(query_sparse_embeddings, threshold=threshold, top_k=0)
 
         assert len(result) == 1
         assert len(result[0]) == 0  # No results above threshold
 
     def test_retrieve_empty_query_vector(self, mock_sparse_indexer: Mock) -> None:
         retriever = SparseRetriever(mock_sparse_indexer)
-        query_vectors: list[dict[str, float]] = [{}]  # Empty query vector
 
-        # Mock empty query sparse matrix
-        mock_sparse_indexer.index_vectors.return_value = sps.csr_matrix([[0.0, 0.0, 0.0, 0.0]])
-
-        result = retriever.retrieve(query_vectors, top_k=2)
+        # empty query sparse matrix
+        query_sparse_embeddings = sps.csr_matrix([[0.0, 0.0, 0.0, 0.0]])
+        result = retriever.retrieve(query_sparse_embeddings, top_k=2)
 
         assert len(result) == 1
         # Should handle empty vectors gracefully
