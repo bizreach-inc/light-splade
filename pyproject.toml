@@ -1,9 +1,11 @@
 [project]
 name = "light-splade"
-version = "0.1.1"
+version = "0.1.2"
 description = "A Python library for efficient sparse retrieval using SPLADE models."
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+keywords = ["nlp", "neural-ir", "information-retrieval", "splade", "sparse-retrieval"]
 dependencies = [
     "accelerate==1.10.1",
     "beir==2.2.0",
@@ -24,7 +26,7 @@ dependencies = [
     "unidic-lite==1.0.8",
 ]
 authors = [
-  { name="Dat Nguyen", email="dat.nguyen@bizreach.co.jp" },
+  { name="BizReach Search-Core team", email="bizreach-search-core@bizreach.co.jp" },
 ]
 maintainers = [
   { name="Dat Nguyen", email="dat.nguyen@bizreach.co.jp" },
@@ -32,6 +34,10 @@ maintainers = [
   { name="Kyohei Watarai", email="kyohei.watarai@bizreach.co.jp" },
   { name="bizreach-search-core", email="bizreach-search-core@bizreach.co.jp" },
 ]
+
+[project.urls]
+Documentation = "https://bizreach-inc.github.io/light-splade"
+Source = "https://github.com/bizreach-inc/light-splade"
 
 [build-system]
 build-backend = "setuptools.build_meta"
