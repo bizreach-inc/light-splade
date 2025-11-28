@@ -34,37 +34,18 @@ We currently support `SPLADE v2` and `SPLADE++`
 - Export trained models into sparse representations compatible with IR systems.
 - Simple, lightweight, and easy to extend for experiments.
 
-## Setup
+## Installation
 
-- Python 3.11+.
-- Recommended: use the `uv` tool to manage the virtual environment (see [Getting started](docs/getting_started.md) document).
-
-Quick setup (recommended):
-
-```bash
-git clone https://github.com/bizreach-inc/light-splade.git
-cd light-splade
-# create and activate virtual env using uv
-uv venv --seed .venv
-source .venv/bin/activate
-uv sync
+```
+pip install light-splade
 ```
 
-For developer checks, run:
 
-```bash
-uv run pre-commit run --all-files
-uv run pytest
-```
+
 
 ## Quickstart
 
-- **Train SPLADE with toy dataset (triplet-based)**:
-
-    - `uv run examples/run_train_splade_triplet.py --config-name toy_splade_ja`
-    - To run on an environment without GPU, see this [trouble shooting](docs/trouble_shooting.md#running-the-training-script-on-cpu-only-machines)
-
-    For full run instructions using `uv` and `Docker` commands, see [Getting started](docs/getting_started.md).
+The following code uses [bizreach-inc/light-splade-japanese-28M](https://huggingface.co/bizreach-inc/light-splade-japanese-28M), an open SPLADE model for Japanese.
 
 - **Convert text to sparse vector with SPLADE model using this package**
 
@@ -149,10 +130,41 @@ print(sparse_vecs[1])
 
 - **Output**
 
-```
+```python
 {'首都': 1.83, '日本': 1.82, '東京': 1.78, '中立': 0.73, '都会': 0.69, '駒': 0.68, '州都': 0.67, '首相': 0.64, '足立': 0.62, 'です': 0.61, '都市': 0.54, 'ユニ': 0.54, '京都': 0.52, '国': 0.51, '発表': 0.49, '成田': 0.48, '太陽': 0.45, '藤原': 0.45, '私立': 0.42, '王国': 0.4...}
 {'202': 1.61, '開催': 1.49, '大阪': 1.34, '万博': 1.19, '東京': 1.15, '年': 1.1, 'いつ': 1.05, '##5': 1.03, '203': 0.86, '月': 0.8, '期間': 0.79, '高槻': 0.79, '京都': 0.7, '神戸': 0.62, '2024': 0.54, '夢': 0.52, '206': 0.52, '姫路': 0.51, '行わ': 0.49, 'こう': 0.49, '芸術': 0.48...}
 ```
+
+
+## Setup for fine-tuning a SPLADE model
+
+- Python 3.11+.
+- Recommended: use the `uv` tool to manage the virtual environment (see [Getting started](docs/getting_started.md) document).
+
+Quick setup (recommended):
+
+```bash
+git clone https://github.com/bizreach-inc/light-splade.git
+cd light-splade
+# create and activate virtual env using uv
+uv venv --seed .venv
+source .venv/bin/activate
+uv sync
+```
+
+For developer checks, run:
+
+```bash
+uv run pre-commit run --all-files
+uv run pytest
+```
+
+
+## Train SPLADE with toy dataset (triplet-based)
+- `uv run examples/run_train_splade_triplet.py --config-name toy_splade_ja`
+- To run on an environment without GPU, see this [trouble shooting](docs/trouble_shooting.md#running-the-training-script-on-cpu-only-machines)
+
+For full run instructions using `uv` and `Docker` commands, see [Getting started](docs/getting_started.md).
 
 ## Input Data format
 
