@@ -125,7 +125,7 @@ class Evaluator:
                 csr_embeddings: sps.csr_matrix = self.model.d_encoder.encode(
                     batch_texts,
                     batch_size=self.batch_size,
-                    max_text_length=self.data_collator.max_length,
+                    max_seq_length=self.data_collator.max_length,
                     return_type="csr_matrix",
                 )  # type: ignore
                 indexer.index_docs(batch_doc_ids, csr_embeddings, use_cache=True)
