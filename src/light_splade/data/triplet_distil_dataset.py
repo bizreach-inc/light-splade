@@ -54,6 +54,7 @@ class TripletDistilDataset(Dataset):
         hard_negative_scores_data_path: str | Path,
         sampling_mode: str = "query_based",
         random_seed: int = 42,
+        is_validation_set: bool = False
     ) -> None:
         """Create and initialize the distillation dataset.
 
@@ -95,6 +96,8 @@ class TripletDistilDataset(Dataset):
         self.sampling_mode = sampling_mode
         random.seed(random_seed)
 
+        self.is_validation_set = is_validation_set
+
         self._validate()
 
     def _validate(self) -> None:
@@ -124,14 +127,15 @@ class TripletDistilDataset(Dataset):
             if len(self.positive_list[qid]) == 0:
                 raise ValueError(f"qid {qid} has no positive document")
 
-        # every query must have at least 1 available negative document
-        for qid in self.positive_list:
-            pos_doc_ids = self.positive_list[qid]
-            sim_scores = self.similarities[qid]
-            neg_doc_ids = set(sim_scores.keys()) - set(pos_doc_ids)
-            neg_doc_ids = neg_doc_ids.intersection(self.docs.get_id_set())
-            if len(neg_doc_ids) == 0:
-                raise ValueError(f"qid {qid} has no available negative document")
+        # every query must have at least 1 available negative document. Apply to training set only.
+        if not self.is_validation_set:
+            for qid in self.positive_list:
+                pos_doc_ids = self.positive_list[qid]
+                sim_scores = self.similarities[qid]
+                neg_doc_ids = set(sim_scores.keys()) - set(pos_doc_ids)
+                neg_doc_ids = neg_doc_ids.intersection(self.docs.get_id_set())
+                if len(neg_doc_ids) == 0:
+                    raise ValueError(f"qid {qid} has no available negative document")
 
         # every (qid, positive_doc_id) pair must have teacher_pair_score
         for qid in self.positive_list:
