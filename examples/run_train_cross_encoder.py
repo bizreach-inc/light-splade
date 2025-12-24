@@ -95,22 +95,32 @@ def main(
     logger.info(f"raw_train_samples={len(raw_train_samples)}")
 
     # Prepare training data
+    max_len = cfg.max_len
+    max_query_len = cfg.max_query_len
+
     logger.info("Filtering training samples by text length...")
     train_samples: list[InputExample] = []
     for query, passage, label in tqdm(raw_train_samples):
+        if max_query_len > 0:
+            query = query[:max_query_len]
+            passage = passage[:max_len - len(query)]
+        # in case max_query_len == 0, i.e, no limit on query -> ignore the pairs whose sum of len is over the max_len
+
         data_len = len(query) + len(passage)
-        if data_len > cfg.max_len:
+        if data_len > max_len:
             continue
         train_samples.append(InputExample(texts=[query, passage], label=label))
+
     logger.info(f"{len(train_samples)=}")
 
     if cfg.max_train_size > 0 and len(train_samples) >= cfg.max_train_size:
         random.shuffle(train_samples)
         train_samples = train_samples[: cfg.max_train_size]
         logger.info(f"After resampling with max_train_size={cfg.max_train_size}: {len(train_samples)=}")
+    
     counter = Counter([sample.label for sample in train_samples])
     logger.info(f"Final: {len(train_samples)=}")
-    logger.info(f"Ratios of labels: {counter}")
+    logger.info(f"Label counts: {counter}, ratio of positives: {counter[1] / len(train_samples):.4f}")
 
     # Cast to Dataset to satisfy type checker
     train_dataloader: DataLoader = DataLoader(train_samples, shuffle=True, batch_size=cfg.train_batch_size)

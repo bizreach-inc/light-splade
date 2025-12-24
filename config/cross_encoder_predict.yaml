@@ -10,4 +10,6 @@ hard_negative_cross_encoder_scores: data/mmarco_ja_4_splade_distil/hard-negative
 
 max_token_len: 256
 char_per_token_ratio: 1.8
+max_query_len: 0.33
+
 predict_batch_size: 128

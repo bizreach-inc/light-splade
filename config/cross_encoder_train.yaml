@@ -6,6 +6,7 @@ max_train_size: 10000000 # 0 for no limit
 max_eval_size: 1000
 max_token_len: 256
 char_per_token_ratio: 1.8
+max_query_len: 0.33
 num_epochs: 1
 train_batch_size: 128
 eval_batch_size: 64

@@ -96,7 +96,7 @@ def load_data(
 
 
 def prepare_data(
-    cfg: ConfigCrossEncoderPrediction, max_len: int
+    cfg: ConfigCrossEncoderPrediction
 ) -> tuple[list[tuple[int, int, int]], list[tuple[str, str]]]:
     logger.info("Preparing data for prediction...")
 
@@ -104,26 +104,30 @@ def prepare_data(
     sorted_qids = sorted(init_scores.keys())
     logger.info(f"{len(init_scores)=}, {len(sorted_qids)=}, {len(id2query)=}, {len(id2doc)=}")
 
-    len_triples: list[tuple[int, int, int]] = []
+    max_len = cfg.max_len
+    max_query_len = cfg.max_query_len
+    tuples: list[tuple[int, int, int, str, str]] = []
     for qid in sorted_qids:
-        query = id2query[qid]
-        max_p_len = max(max_len - len(query), 0)
-        doc_ids = init_scores[qid].keys()
-        for doc_id in doc_ids:
+        query = id2query[qid][:max_query_len]
+        max_d_len = max(max_len - len(query), 0)
+        if max_d_len == 0:
             # NOTE: if the query_text is longer than max_len, then all of the doc_text will be empty.
-            doc = id2doc[doc_id][:max_p_len]
-            len_triples.append((qid, doc_id, len(query) + len(doc)))
-    logger.info(f"{len(len_triples)=}")
-    len_triples.sort(key=lambda x: -x[2])
+            logger.warning(
+                f"Current max_d_len is 0 ({len(query)=}=max_len). All pair samples from this long query have no document text."
+            )
+        doc_ids = init_scores[qid].keys() # ignore the scores 
+        for doc_id in doc_ids:
+            doc = id2doc[doc_id][:max_d_len]
+            tuples.append((qid, doc_id, len(query) + len(doc), query, doc))
+    logger.info(f"{len(tuples)=}")
 
-    # accumulate all pairs sorted by text len (desc order)
-    logger.info("Building (query, doc) pairs ordered by text len...")
-    text_pairs: list[tuple[str, str]] = []
-    for qid, doc_id, text_len in tqdm(len_triples):
-        query = id2query[qid]
-        max_p_len = max(max_len - len(query), 0)
-        doc = id2doc[doc_id][:max_p_len]
-        text_pairs.append((query, doc))
+    # Sort samples by length to create a sequence of batches with similar sample lengths. 
+    # This reduces padding, thereby increasing inference speed.
+    tuples.sort(key=lambda x: -x[2])
+
+    qids, doc_ids, lens, queries, docs = zip(*tuples)
+    len_triples: list[tuple[int, int, int]] = list(zip(qids, doc_ids, lens))
+    text_pairs: list[tuple[str, str]] = list(zip(queries, docs))
     logger.info(f"Num of pairs: {len(text_pairs):,}")
 
     logger.info("Finished preparing data for prediction!")
@@ -186,7 +190,7 @@ def main(
         device=device,
     )
 
-    sorted_len_triples, text_pairs = prepare_data(cfg=cfg, max_len=cfg.max_len)
+    sorted_len_triples, text_pairs = prepare_data(cfg=cfg)
     pred_scores = predict(text_pairs, model, cfg.predict_batch_size)
     similarity_scores = build_similarity_scores(sorted_len_triples, pred_scores)
 
