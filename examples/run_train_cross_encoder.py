@@ -125,7 +125,7 @@ def main(
     # Cast to Dataset to satisfy type checker
     train_dataloader: DataLoader = DataLoader(train_samples, shuffle=True, batch_size=cfg.train_batch_size)
 
-    evaluator = CrossEncoderRerankingEvaluator(eval_samples, name="mmarco-ja-eval", batch_size=cfg.eval_batch_size)
+    evaluator = CrossEncoderRerankingEvaluator(eval_samples, name="eval", batch_size=cfg.eval_batch_size)
 
     model = CrossEncoder(
         cfg.model_path,
