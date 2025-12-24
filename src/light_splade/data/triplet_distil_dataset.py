@@ -54,7 +54,7 @@ class TripletDistilDataset(Dataset):
         hard_negative_scores_data_path: str | Path,
         sampling_mode: str = "query_based",
         random_seed: int = 42,
-        is_validation_set: bool = False
+        is_validation_set: bool = False,
     ) -> None:
         """Create and initialize the distillation dataset.
 

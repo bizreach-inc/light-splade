@@ -92,7 +92,7 @@ def main(config: DictConfig) -> None:
         doc_master_data_path=Path(cfg.data.validation_doc_master),
         positive_pair_data_path=Path(cfg.data.validation_positives),
         hard_negative_scores_data_path=Path(cfg.data.hard_negative_scores),
-        is_validation_set=True
+        is_validation_set=True,
     )
 
     logger.info(f"{len(train_ds)=}")

@@ -403,7 +403,7 @@ class MMarcoConverter:
                 doc_master_data_path=self.valid_doc_master_file,
                 positive_pair_data_path=self.valid_positive_list_file,
                 hard_negative_scores_data_path=(self.ce_init_hard_negatives_file),
-                is_validation_set=True
+                is_validation_set=True,
             )
         except Exception as e:
             logger.error(f"Validation failed: {e}")

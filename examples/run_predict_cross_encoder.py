@@ -95,9 +95,7 @@ def load_data(
     return init_scores, id2query, id2doc
 
 
-def prepare_data(
-    cfg: ConfigCrossEncoderPrediction
-) -> tuple[list[tuple[int, int, int]], list[tuple[str, str]]]:
+def prepare_data(cfg: ConfigCrossEncoderPrediction) -> tuple[list[tuple[int, int, int]], list[tuple[str, str]]]:
     logger.info("Preparing data for prediction...")
 
     init_scores, id2query, id2doc = load_data(cfg)
@@ -108,24 +106,24 @@ def prepare_data(
     max_query_len = cfg.max_query_len
     tuples: list[tuple[int, int, int, str, str]] = []
     for qid in sorted_qids:
-        query = id2query[qid][:max_query_len]
+        query = id2query[qid][: int(max_query_len)]
         max_d_len = max(max_len - len(query), 0)
         if max_d_len == 0:
             # NOTE: if the query_text is longer than max_len, then all of the doc_text will be empty.
             logger.warning(
                 f"Current max_d_len is 0 ({len(query)=}=max_len). All pair samples from this long query have no document text."
             )
-        doc_ids = init_scores[qid].keys() # ignore the scores 
+        doc_ids = init_scores[qid].keys()  # ignore the scores
         for doc_id in doc_ids:
             doc = id2doc[doc_id][:max_d_len]
             tuples.append((qid, doc_id, len(query) + len(doc), query, doc))
     logger.info(f"{len(tuples)=}")
 
-    # Sort samples by length to create a sequence of batches with similar sample lengths. 
+    # Sort samples by length to create a sequence of batches with similar sample lengths.
     # This reduces padding, thereby increasing inference speed.
     tuples.sort(key=lambda x: -x[2])
 
-    qids, doc_ids, lens, queries, docs = zip(*tuples)
+    qids, doc_ids, lens, queries, docs = zip(*tuples)  # type: ignore
     len_triples: list[tuple[int, int, int]] = list(zip(qids, doc_ids, lens))
     text_pairs: list[tuple[str, str]] = list(zip(queries, docs))
     logger.info(f"Num of pairs: {len(text_pairs):,}")

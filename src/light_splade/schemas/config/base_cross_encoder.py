@@ -16,9 +16,6 @@ from dataclasses import dataclass
 from dataclasses import field
 from logging import getLogger
 
-from .base import JSONSerializableMixin
-
-
 logger = getLogger(__name__)
 
 

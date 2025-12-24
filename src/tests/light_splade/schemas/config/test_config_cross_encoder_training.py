@@ -19,40 +19,21 @@ from light_splade.schemas.config.base_cross_encoder import BaseConfigCrossEncode
 
 class TestBaseConfigCrossEncoder:
     def test_max_len(self) -> None:
-        config = BaseConfigCrossEncoder(
-            char_per_token_ratio=2.0,
-            max_token_len=100
-        )
+        config = BaseConfigCrossEncoder(char_per_token_ratio=2.0, max_token_len=100)
         assert config.max_len == 200
 
     def test_not_allowed_max_len(self) -> None:
         with pytest.raises((TypeError)):
-            config = BaseConfigCrossEncoder(
-                char_per_token_ratio=2.0,
-                max_token_len=100,
-                max_len=300
-            )
+            _ = BaseConfigCrossEncoder(char_per_token_ratio=2.0, max_token_len=100, max_len=300)  # type: ignore
 
     def test_max_query_len(self) -> None:
-        config = BaseConfigCrossEncoder(
-            char_per_token_ratio=2.0,
-            max_token_len=100,
-            max_query_len=0.3
-        )
+        config = BaseConfigCrossEncoder(char_per_token_ratio=2.0, max_token_len=100, max_query_len=0.3)
         assert config.max_query_len == 60
 
     def test_invalid_max_query_len(self) -> None:
         with pytest.raises((ValueError)):
-            config = BaseConfigCrossEncoder(
-                char_per_token_ratio=2.0,
-                max_token_len=100,
-                max_query_len=1.1
-            )
+            _ = BaseConfigCrossEncoder(char_per_token_ratio=2.0, max_token_len=100, max_query_len=1.1)
 
     def test_max_query_len_adjustment(self) -> None:
-        config = BaseConfigCrossEncoder(
-            char_per_token_ratio=2.0,
-            max_token_len=100,
-            max_query_len=1000
-        )
+        config = BaseConfigCrossEncoder(char_per_token_ratio=2.0, max_token_len=100, max_query_len=1000)
         assert config.max_query_len == 200
