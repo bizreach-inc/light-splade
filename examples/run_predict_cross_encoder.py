@@ -26,7 +26,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-import torch
 import transformers
 import typer
 from sentence_transformers.cross_encoder import CrossEncoder
@@ -35,6 +34,7 @@ from tqdm import tqdm
 from light_splade.data import PairScore
 from light_splade.schemas.config import ConfigCrossEncoderPrediction
 from light_splade.utils.io import load_yaml
+from light_splade.utils.model import get_device
 
 warnings.filterwarnings("ignore")
 
@@ -179,7 +179,7 @@ def main(
     cfg = ConfigCrossEncoderPrediction(**load_yaml(config_file))
     logger.info("cfg=" + json.dumps(cfg.to_dict(), indent=4))
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = get_device()
     logger.info("Initializing Cross-Encoder model...")
     model = CrossEncoder(
         cfg.model_path,

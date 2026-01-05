@@ -32,6 +32,7 @@ from light_splade.models import Splade
 from light_splade.schemas.config import ConfigSpladeTriplet
 from light_splade.trainer import SpladeTripletTrainer
 from light_splade.utils.argument import instantiate
+from light_splade.utils.model import get_device
 from light_splade.utils.random import set_seeds
 
 basicConfig(level="INFO", format="%(asctime)s : %(levelname)s : %(name)s : %(message)s")
@@ -41,7 +42,7 @@ transformers.utils.logging.set_verbosity(transformers.logging.INFO)
 transformers.utils.logging.enable_default_handler()
 transformers.utils.logging.enable_explicit_format()
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = get_device()
 
 
 @hydra.main(version_base="1.2", config_path="../config", config_name=None)
