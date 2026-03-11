@@ -31,3 +31,21 @@ def contiguous(model: torch.nn.Module) -> torch.nn.Module:
         if not param.data.is_contiguous():
             param.data = param.data.contiguous()
     return model
+
+
+def get_device() -> torch.device:
+    """Get the available device with the following priority: CUDA > MPS > XPU > CPU.
+
+    Returns:
+        torch.device: The selected device.
+    """
+    if torch.cuda.is_available():  # NVIDIA GPU
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():  # Apple Silicon GPU
+        device = torch.device("mps")
+    elif torch.xpu.is_available():  # Intel GPU
+        device = torch.device("xpu")
+    else:
+        device = torch.device("cpu")
+
+    return device

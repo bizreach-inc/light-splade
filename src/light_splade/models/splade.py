@@ -52,6 +52,7 @@ from transformers import PreTrainedTokenizer
 
 from light_splade.schemas.types import SPARSE_VECTOR_LIST
 from light_splade.utils.model import contiguous
+from light_splade.utils.model import get_device
 
 logger = getLogger(__name__)
 
@@ -101,10 +102,10 @@ class SpladeEncoder(torch.nn.Module):
         self,
         model_path: str,
         agg: str = "max",
-        device: str | None = None,
+        device: str | torch.device | None = None,
     ) -> None:
         assert agg in ["max", "sum"], f"agg must be one of ['max', 'sum'], but got {agg}"
-        self.device: str = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device: str | torch.device = device if device else get_device()
 
         super().__init__()
         self.from_pretrained(model_path)
@@ -305,7 +306,7 @@ class Splade(torch.nn.Module):
         q_model_path: str | None = None,
         freeze_d_model: bool = False,
         agg: str = "max",
-        device: str | None = None,
+        device: str | torch.device | None = None,
     ) -> None:
         """Create a Splade model.
 
@@ -325,7 +326,7 @@ class Splade(torch.nn.Module):
 
         super().__init__()
         if device is None:
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = get_device()
 
         self.d_encoder = SpladeEncoder(d_model_path, agg=agg, device=device)
         self.q_encoder = self.d_encoder

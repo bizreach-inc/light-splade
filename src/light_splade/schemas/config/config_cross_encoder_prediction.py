@@ -16,11 +16,12 @@ from dataclasses import dataclass
 from dataclasses import field
 
 from .base import JSONSerializableMixin
+from .base_cross_encoder import BaseConfigCrossEncoder
 
 
 # Config class for CrossEncoder Training
 @dataclass
-class ConfigCrossEncoderPrediction(JSONSerializableMixin):
+class ConfigCrossEncoderPrediction(BaseConfigCrossEncoder, JSONSerializableMixin):
     model_path: str = field(
         metadata={"help": "path to save the cross-encoder model to be used for prediction."},
     )
@@ -47,31 +48,7 @@ class ConfigCrossEncoderPrediction(JSONSerializableMixin):
         }
     )
 
-    max_token_len: int = field(
-        default=512,
-        metadata={
-            "help": "limit num of tokens for samples, including `query`, `doc` and several special tokens. "
-            "Note that this limit must be less than or equal to model `max_position_embeddings`"
-        },
-    )
-
-    char_per_token_ratio: float = field(
-        default=1.8,
-        metadata={"help": "path to save the output model and other training result."},
-    )
-
     predict_batch_size: int = field(
         default=32,
         metadata={"help": "prediction batch size"},
     )
-
-    max_len: int = field(
-        default=0,
-        metadata={
-            "help": "max length of the input sequence. "
-            "This is automatically calculated as `max_token_len * char_per_token_ratio`."
-        },
-    )
-
-    def __post_init__(self) -> None:
-        self.max_len = int(self.max_token_len * self.char_per_token_ratio)
