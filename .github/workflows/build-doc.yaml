@@ -12,11 +12,19 @@ jobs:
   build-doc:
     name: Build documentation
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set Takumi Guard
+        uses: flatt-security/setup-takumi-guard-pypi@v1
+        with:
+          bot-id: "BT01KJVWWCWV4T141Y8XDTX6CH1G"
 
       - name: "Set up Python"
         uses: actions/setup-python@v5
