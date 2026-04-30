@@ -50,6 +50,9 @@ include = ["light_splade"]
 [tool.setuptools_scm]
 # Currently set empty to use default settings
 
+[tool.uv]
+exclude-newer = "14 days"
+
 [dependency-groups]
 dev = [
     "mypy>=1.17.1",
