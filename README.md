@@ -118,8 +118,9 @@ token_outputs = {key: value.to(device) for key, value in token_outputs.items()}
 
 with torch.inference_mode():
     outputs = transformer(**token_outputs)
+    # Compute in-place to reduce memory usage (safe here because no backward pass)
     dense, _ = torch.max(
-        torch.log(1 + torch.relu(outputs.logits)) * attention_mask.unsqueeze(-1),
+        torch.relu_(outputs.logits).log1p_().mul_(attention_mask.unsqueeze(-1)),
         dim=1,
     )
 sparse_vecs = dense_to_sparse(dense, idx2token)
