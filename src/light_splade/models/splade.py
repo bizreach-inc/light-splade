@@ -137,8 +137,13 @@ class SpladeEncoder(torch.nn.Module):
         logits = outs.logits  # (b, N, V)
 
         # Eq. (1) in [2]
+        if logits.requires_grad:
+            activations = torch.log1p(torch.relu(logits)) * attention_mask.unsqueeze(-1)  # (b, N, V)
+        else:
+            # Compute in-place to reduce memory usage when gradients are not required
+            activations = torch.relu_(logits).log1p_().mul_(attention_mask.unsqueeze(-1))  # (b, N, V)
         vecs, indices_ = self.agg_func(
-            torch.log(1 + torch.relu(logits)) * attention_mask.unsqueeze(-1),  # (b, N, 1)
+            activations,
             dim=1,
         )
         # vectors (b, V), which are weights `w_j` of the input query/doc over the vocab
