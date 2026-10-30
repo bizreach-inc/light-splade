@@ -52,6 +52,8 @@ include = ["light_splade"]
 
 [tool.uv]
 exclude-newer = "14 days"
+# Temporary exception to pick up the eMudhra CA fixes. Remove once they are older than 14 days.
+exclude-newer-package = { certifi = "2026-10-28T00:00:00Z", grpcio = "2026-10-28T00:00:00Z" }
 
 [dependency-groups]
 dev = [

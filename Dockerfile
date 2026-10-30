@@ -1,7 +1,7 @@
 ARG BASE_IMAGE_URL=nvidia/cuda
 ARG BASE_IMAGE_TAG=12.5.0-devel-ubuntu22.04
 ARG PYTHON_VERSION=3.11
-ARG UV_VERSION=0.8.16
+ARG UV_VERSION=0.13.5
 
 FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv_base
 
