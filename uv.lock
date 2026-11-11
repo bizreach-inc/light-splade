@@ -10,10 +10,6 @@ resolution-markers = [
 exclude-newer = "2026-10-14T11:58:43.282191Z"
 exclude-newer-span = "P14D"
 
-[options.exclude-newer-package]
-certifi = "2026-10-28T00:00:00Z"
-grpcio = "2026-10-28T00:00:00Z"
-
 [[package]]
 name = "absl-py"
 version = "2.2.2"
